@@ -1,0 +1,28 @@
+{
+  "name": "penguin-brawl",
+  "version": "1.0.0",
+  "description": "Multiplayer 3D penguin knock-off game",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node server/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artstyleimage-png/pinguin.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/artstyleimage-png/pinguin/issues"
+  },
+  "homepage": "https://github.com/artstyleimage-png/pinguin#readme",
+  "type": "module",
+  "dependencies": {
+    "express": "^5.2.1",
+    "three": "^0.186.1",
+    "ws": "^8.22.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

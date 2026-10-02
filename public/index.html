@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Penguin Brawl</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- ===================== LOBBY ===================== -->
+  <div id="lobby" class="screen hidden">
+    <header class="topbar">
+      <div class="logo">PENGUIN<span>BRAWL</span></div>
+      <nav class="tabs">
+        <button class="tab active" data-tab="play">ИГРАТЬ</button>
+        <button class="tab" data-tab="locker">ШКАФЧИК</button>
+      </nav>
+      <div class="profile-chip">
+        <div class="stat"><b id="statWins">0</b><small>ПОБЕД</small></div>
+        <div class="stat"><b id="statSkins">0</b><small>СКИНОВ</small></div>
+        <button id="nameBtn" class="name-btn" title="Сменить имя"><span id="myName">...</span> ✎</button>
+      </div>
+    </header>
+
+    <aside class="party-panel">
+      <div class="panel-title">ПАТИ <span id="partyCount">1/4</span></div>
+      <ul id="partyList" class="party-list"></ul>
+      <div class="party-code">
+        <small>КОД ПАТИ</small>
+        <div class="code-row"><b id="partyCode">-----</b><button id="copyInvite" class="mini">Скопировать ссылку</button></div>
+      </div>
+      <form id="joinForm" class="join-form">
+        <input id="joinInput" maxlength="5" placeholder="КОД ДРУГА" autocomplete="off">
+        <button class="mini primary">ВОЙТИ</button>
+      </form>
+      <button id="leaveParty" class="mini ghost hidden">Покинуть пати</button>
+    </aside>
+
+    <div class="click-hint" id="clickHint">Нажми на своего пингвина, чтобы выбрать скин</div>
+
+    <div class="play-area">
+      <div class="mode-card">
+        <small>РЕЖИМ</small>
+        <b>ICE BRAWL</b>
+        <span>До 10 игроков · Последний на льдине побеждает</span>
+      </div>
+      <div id="queueStatus" class="queue-status hidden">
+        <div class="spinner"></div>
+        <div><b id="queueText">Поиск игроков…</b><small id="queueSub"></small></div>
+      </div>
+      <button id="playBtn" class="play-btn">ИГРАТЬ</button>
+    </div>
+
+    <!-- Locker -->
+    <div id="locker" class="locker hidden">
+      <div class="locker-head">
+        <h2>ШКАФЧИК</h2>
+        <button id="closeLocker" class="mini ghost">✕ Назад</button>
+      </div>
+      <div id="skinInfo" class="skin-info"></div>
+      <div id="skinGrid" class="skin-grid"></div>
+      <button id="equipBtn" class="play-btn small">НАДЕТЬ</button>
+    </div>
+  </div>
+
+  <!-- ===================== GAME HUD ===================== -->
+  <div id="hud" class="screen hidden">
+    <div class="hud-tl">
+      <div class="hud-title">PENGUIN BRAWL - <span id="roundLabel">ROUND 1</span></div>
+      <div id="playerIcons" class="player-icons"></div>
+    </div>
+    <div class="hud-tc">
+      <div id="phaseLabel" class="phase-label">ГОТОВЬСЯ</div>
+      <div id="phaseSub" class="phase-sub"></div>
+    </div>
+    <div class="hud-tr"><div class="timer" id="timer">0:10</div></div>
+    <div id="killfeed" class="killfeed"></div>
+    <div id="bigText" class="big-text"></div>
+    <div id="nameTags"></div>
+    <div class="hud-bottom">
+      <span id="aliveLabel"></span>
+      <button id="leaveMatch" class="mini ghost">Выйти в лобби</button>
+    </div>
+    <div id="results" class="results hidden">
+      <div class="results-card">
+        <div id="resultsTitle" class="results-title">#1 ПОБЕДА!</div>
+        <div id="resultsSub" class="results-sub"></div>
+        <div id="rewardBox" class="reward hidden">
+          <small>НОВЫЙ СКИН РАЗБЛОКИРОВАН</small>
+          <img id="rewardImg" alt="">
+          <b id="rewardName"></b>
+          <span id="rewardRarity"></span>
+        </div>
+        <button id="backToLobby" class="play-btn small">В ЛОББИ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">
+    <div class="logo big">PENGUIN<span>BRAWL</span></div>
+    <div id="loadingText">Подключение…</div>
+  </div>
+  <div id="toast" class="toast"></div>
+  <button id="muteBtn" class="mute" title="Звук">🔊</button>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
