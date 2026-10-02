@@ -1,12 +1,14 @@
 import {
   ARENA_HALF, ARENA_MIN_HALF, ARENA_SHRINK, SHRINK_FROM_ROUND,
   WATER_LEVEL, PENGUIN_RADIUS, MAX_AIM, MAX_SPEED,
-} from '../shared/constants.js';
+} from './constants.js';
 
 const TICK_HZ = 30;
 const SUBSTEPS = 4;
-const INTRO_MS = Number(process.env.INTRO_MS ?? 3500);
-const AIM_MS = Number(process.env.AIM_MS ?? 10000);
+// also runs in the browser (offline mode), where there is no `process`
+const env = globalThis.process?.env ?? {};
+const INTRO_MS = Number(env.INTRO_MS ?? 3500);
+const AIM_MS = Number(env.AIM_MS ?? 10000);
 const SLIDE_MAX_MS = 9000;
 const SLIDE_MIN_MS = 700;
 const MELT_MS = 1800;

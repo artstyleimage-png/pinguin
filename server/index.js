@@ -6,7 +6,7 @@ import { WebSocketServer } from 'ws';
 import { MAX_PLAYERS, MAX_PARTY } from '../shared/constants.js';
 import { SKINS } from '../shared/skins.js';
 import { getProfile, setName, equip, recordMatch, publicProfile } from './profiles.js';
-import { Match } from './match.js';
+import { Match } from '../shared/match.js';
 
 const PORT = Number(process.env.PORT || 3000);
 const QUEUE_WAIT_MS = Number(process.env.QUEUE_WAIT_MS ?? 12000);

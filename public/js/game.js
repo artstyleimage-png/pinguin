@@ -4,7 +4,7 @@ import { Penguin } from './penguin.js';
 import { skinThumb } from './thumbs.js';
 import { sfx } from './sfx.js';
 import { net } from './net.js';
-import { MAX_AIM, PENGUIN_RADIUS, WATER_LEVEL } from '/shared/constants.js';
+import { MAX_AIM, PENGUIN_RADIUS, WATER_LEVEL } from '../shared/constants.js';
 
 const $ = (id) => document.getElementById(id);
 const INTERP_DELAY = 80; // ms behind the newest server snapshot

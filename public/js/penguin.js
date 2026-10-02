@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SKIN_BY_ID } from '/shared/skins.js';
+import { SKIN_BY_ID } from '../shared/skins.js';
 
 // Shared geometry: every penguin is built from the same handful of shapes.
 const G = {

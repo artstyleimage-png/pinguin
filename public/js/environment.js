@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { WATER_LEVEL } from '/shared/constants.js';
+import { WATER_LEVEL } from '../shared/constants.js';
 
 const SKY_TOP = new THREE.Color(0x4f8fd6);
 const SKY_HORIZON = new THREE.Color(0xdfeefa);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SKINS, SKIN_BY_ID, RARITIES } from '/shared/skins.js';
+import { SKINS, SKIN_BY_ID, RARITIES } from '../shared/skins.js';
 import { net } from './net.js';
 import { Lobby } from './lobby.js';
 import { Game } from './game.js';
@@ -224,8 +224,9 @@ function copyInvite() {
   if (!state.party) return;
   const url = `${location.origin}${location.pathname}?party=${state.party.code}`;
   const done = () => toast('Ссылка-приглашение скопирована!', true);
-  if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => prompt('Отправь другу эту ссылку:', url));
-  else prompt('Отправь другу эту ссылку:', url);
+  const fallback = () => toast(`Отправь другу ссылку: ${url}`, true);
+  if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, fallback);
+  else fallback();
 }
 
 // ------------------------------------------------------------ UI events
@@ -243,9 +244,31 @@ $('joinForm').onsubmit = (e) => {
   $('joinInput').value = '';
 };
 $('leaveParty').onclick = () => net.send('party:leave');
+// inline nickname editing (browser prompt() dialogs are not available everywhere)
 $('nameBtn').onclick = () => {
-  const name = prompt('Твой никнейм (до 16 символов):', state.profile?.name || '');
-  if (name) net.send('setName', { name });
+  if ($('nameBtn').querySelector('input')) return;
+  const input = document.createElement('input');
+  input.id = 'nameInput';
+  input.maxLength = 16;
+  input.value = state.profile?.name || '';
+  input.setAttribute('aria-label', 'Никнейм');
+  $('nameBtn').replaceChildren(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = (save) => {
+    if (done) return;
+    done = true;
+    const name = input.value.trim();
+    $('nameBtn').innerHTML = '<span id="myName"></span> ✎';
+    renderProfile();
+    if (save && name && name !== state.profile.name) net.send('setName', { name });
+  };
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter') finish(true);
+    if (e.key === 'Escape') finish(false);
+  };
+  input.onblur = () => finish(true);
 };
 $('playBtn').onclick = () => {
   sfx.click();
@@ -276,6 +299,10 @@ function backToLobby() {
 
 net.on('welcome', (msg) => {
   state.profile = msg.profile;
+  if (msg.offline) {
+    document.body.classList.add('offline');
+    $('modeText').textContent = 'Ты против 5 ботов · Последний на льдине побеждает';
+  }
   renderProfile();
   $('loading').classList.add('gone');
   showView('lobby');

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { SKINS, SKIN_BY_ID, STARTER_SKINS, RARITIES } from '../shared/skins.js';
+import { SKIN_BY_ID, STARTER_SKINS, pickReward } from '../shared/skins.js';
 
 const DATA_DIR = process.env.DATA_DIR || path.resolve('data');
 const FILE = path.join(DATA_DIR, 'profiles.json');
@@ -68,18 +68,8 @@ export function recordMatch(p, won) {
   let reward = null;
   if (won) {
     p.wins += 1;
-    const locked = SKINS.filter((s) => !p.owned.includes(s.id));
-    if (locked.length) {
-      // rarer skins are less likely to drop
-      const total = locked.reduce((sum, s) => sum + RARITIES[s.rarity].weight, 0);
-      let r = Math.random() * total;
-      reward = locked[locked.length - 1];
-      for (const s of locked) {
-        r -= RARITIES[s.rarity].weight;
-        if (r <= 0) { reward = s; break; }
-      }
-      p.owned.push(reward.id);
-    }
+    reward = pickReward(p.owned);
+    if (reward) p.owned.push(reward.id);
   }
   scheduleSave();
   return reward ? reward.id : null;

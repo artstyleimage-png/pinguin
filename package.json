@@ -4,7 +4,8 @@
   "description": "Multiplayer 3D penguin knock-off game",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "build:static": "node scripts/build-static.mjs"
   },
   "repository": {
     "type": "git",

@@ -29,3 +29,16 @@ export const SKINS = [
 
 export const SKIN_BY_ID = Object.fromEntries(SKINS.map((s) => [s.id, s]));
 export const STARTER_SKINS = SKINS.filter((s) => s.starter).map((s) => s.id);
+
+/** Random locked skin for a winner; rarer skins drop less often. Null when all are owned. */
+export function pickReward(owned) {
+  const locked = SKINS.filter((s) => !owned.includes(s.id));
+  if (!locked.length) return null;
+  const total = locked.reduce((sum, s) => sum + RARITIES[s.rarity].weight, 0);
+  let r = Math.random() * total;
+  for (const s of locked) {
+    r -= RARITIES[s.rarity].weight;
+    if (r <= 0) return s;
+  }
+  return locked[locked.length - 1];
+}

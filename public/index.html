@@ -6,12 +6,12 @@
   <title>Penguin Brawl</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="css/style.css">
   <script type="importmap">
     {
       "imports": {
-        "three": "/vendor/three/build/three.module.js",
-        "three/addons/": "/vendor/three/examples/jsm/"
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
       }
     }
   </script>
@@ -46,6 +46,7 @@
         <button class="mini primary">ВОЙТИ</button>
       </form>
       <button id="leaveParty" class="mini ghost hidden">Покинуть пати</button>
+      <p class="offline-note">Офлайн-режим: ты играешь против ботов, прогресс и скины сохраняются в этом браузере. Пати с друзьями работает, когда игра запущена через сервер (npm start).</p>
     </aside>
 
     <div class="click-hint" id="clickHint">Нажми на своего пингвина, чтобы выбрать скин</div>
@@ -54,7 +55,7 @@
       <div class="mode-card">
         <small>РЕЖИМ</small>
         <b>ICE BRAWL</b>
-        <span>До 10 игроков · Последний на льдине побеждает</span>
+        <span id="modeText">До 10 игроков · Последний на льдине побеждает</span>
       </div>
       <div id="queueStatus" class="queue-status hidden">
         <div class="spinner"></div>
@@ -115,6 +116,6 @@
   <div id="toast" class="toast"></div>
   <button id="muteBtn" class="mute" title="Звук">🔊</button>
 
-  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
