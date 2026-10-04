@@ -12,7 +12,7 @@ function rand(seed) {
 }
 
 /** Lights, sky, ocean, icebergs and mountains shared by the lobby and the arena. */
-export function createEnvironment(scene, { shadowSize = 16 } = {}) {
+export function createEnvironment(scene, { shadowSize = 16, bergMin = 45 } = {}) {
   scene.background = SKY_HORIZON.clone();
   scene.fog = new THREE.Fog(0xd6e7f5, 60, 260);
 
@@ -76,7 +76,7 @@ export function createEnvironment(scene, { shadowSize = 16 } = {}) {
   const bergMat = new THREE.MeshStandardMaterial({ color: 0xe8f6ff, flatShading: true, roughness: 0.35, emissive: 0x3c7fb0, emissiveIntensity: 0.12 });
   for (let i = 0; i < 22; i++) {
     const a = r() * Math.PI * 2;
-    const d = 45 + r() * 110;
+    const d = bergMin + r() * 110;
     const s = 4 + r() * 12;
     const geo = new THREE.IcosahedronGeometry(1, 1);
     jitter(geo, 0.25, r);

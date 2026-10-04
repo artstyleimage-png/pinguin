@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Penguin Parkour</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/parkour.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="parkour">
+  <canvas id="scene"></canvas>
+
+  <!-- ===================== LEVEL SELECT ===================== -->
+  <div id="menu" class="screen">
+    <header class="topbar">
+      <div class="logo">PENGUIN<span>PARKOUR</span></div>
+      <a class="mini ghost back-link" href="./">← Penguin Brawl</a>
+    </header>
+    <div class="menu-body">
+      <h1>Выбери трассу</h1>
+      <div id="levelGrid" class="level-grid"></div>
+      <div class="controls-help">
+        <span><b>WASD</b> бег</span>
+        <span><b>Пробел</b> прыжок · ещё раз в воздухе — двойной</span>
+        <span><b>Мышь</b> камера</span>
+        <span><b>R</b> к чекпоинту</span>
+        <span><b>Esc</b> пауза</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud" class="screen hidden">
+    <div class="pk-tl">
+      <div class="pk-level" id="levelName"></div>
+      <div class="pk-time" id="clock">0:00.00</div>
+    </div>
+    <div class="pk-tr">
+      <div class="pk-chip">🐟 <b id="fishCount">0/0</b></div>
+      <div class="pk-chip">💦 <b id="deathCount">0</b></div>
+      <button id="pauseBtn" class="mini ghost">❚❚</button>
+    </div>
+    <div id="hint" class="pk-hint"></div>
+    <div id="banner" class="pk-banner"></div>
+    <div id="lockHint" class="pk-lock hidden">Кликни, чтобы управлять камерой мышью</div>
+    <div id="touch" class="touch hidden">
+      <div id="stick" class="stick"><div id="stickKnob" class="knob"></div></div>
+      <button id="jumpBtn" class="jump-btn">⤒</button>
+    </div>
+  </div>
+
+  <!-- ===================== PAUSE ===================== -->
+  <div id="pause" class="overlay hidden">
+    <div class="card">
+      <h2>ПАУЗА</h2>
+      <button id="resumeBtn" class="play-btn small">ДАЛЬШЕ</button>
+      <button id="restartBtn" class="mini">↺ Заново с начала</button>
+      <button id="menuBtn" class="mini ghost">Выбор трассы</button>
+    </div>
+  </div>
+
+  <!-- ===================== FINISH ===================== -->
+  <div id="done" class="overlay hidden">
+    <div class="card">
+      <h2>ФИНИШ!</h2>
+      <div id="doneStars" class="stars"></div>
+      <div class="done-stats">
+        <div><small>ВРЕМЯ</small><b id="doneTime"></b><span id="doneBest"></span></div>
+        <div><small>РЫБКИ</small><b id="doneFish"></b></div>
+        <div><small>ПАДЕНИЯ</small><b id="doneDeaths"></b></div>
+      </div>
+      <p id="doneNote" class="done-note"></p>
+      <button id="nextBtn" class="play-btn small">ДАЛЬШЕ</button>
+      <div class="row">
+        <button id="retryBtn" class="mini">↺ Ещё раз</button>
+        <button id="doneMenuBtn" class="mini ghost">Выбор трассы</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading" class="loading">
+    <div class="logo big">PENGUIN<span>PARKOUR</span></div>
+    <div>Загрузка…</div>
+  </div>
+  <button id="muteBtn" class="mute" title="Звук">🔊</button>
+
+  <script type="module" src="js/parkour/main.js"></script>
+</body>
+</html>

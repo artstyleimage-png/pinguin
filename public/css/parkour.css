@@ -1,0 +1,84 @@
+/* Penguin Parkour: builds on style.css (colors, fonts, buttons, topbar, loading, mute). */
+
+.back-link { margin-left: auto; text-decoration: none; }
+
+/* ---------- level select ---------- */
+.menu-body {
+  position: absolute; inset: 64px 0 0 0; overflow-y: auto; padding: 24px 20px 80px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  background: linear-gradient(180deg, rgba(5,20,60,0) 0%, rgba(5,20,60,.55) 100%);
+}
+.menu-body h1 { margin: 0; font-family: var(--font-display); font-style: italic; font-size: clamp(30px, 5vw, 46px); font-weight: 400; text-shadow: 0 3px 0 #0a2a66; }
+.level-grid { width: min(980px, 100%); display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.level-card {
+  position: relative; text-align: left; border: 2px solid var(--panel-border); border-radius: 14px; padding: 14px;
+  background: var(--panel); color: #fff; backdrop-filter: blur(6px); display: flex; flex-direction: column; gap: 6px;
+  transition: transform .12s, border-color .12s;
+}
+.level-card:hover:not(:disabled) { transform: translateY(-3px); border-color: var(--yellow); }
+.level-card:disabled { cursor: default; opacity: .55; }
+.level-card .num { font-family: var(--font-display); font-size: 14px; color: var(--yellow); }
+.level-card b { font-family: var(--font-display); font-size: 24px; font-weight: 400; line-height: 1.05; }
+.level-card p { margin: 0; font-size: 13px; color: var(--muted); flex: 1; }
+.level-card .meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 900; }
+.level-card .lock { position: absolute; top: 12px; right: 14px; font-size: 20px; }
+.stars { letter-spacing: 2px; color: rgba(255,255,255,.25); }
+.stars .on { color: var(--yellow); text-shadow: 0 0 8px rgba(255,224,58,.6); }
+.controls-help { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; font-size: 13px; color: var(--muted); font-weight: 700; max-width: 720px; }
+.controls-help b { color: #fff; background: rgba(255,255,255,.14); padding: 1px 7px; border-radius: 5px; margin-right: 3px; }
+
+/* ---------- hud ---------- */
+.pk-tl { position: absolute; top: 14px; left: 16px; pointer-events: none; }
+.pk-level { font-family: var(--font-display); font-size: 18px; color: var(--muted); text-shadow: 0 2px 0 rgba(0,0,0,.3); }
+.pk-time { font-family: var(--font-display); font-size: 40px; line-height: 1; text-shadow: 0 3px 0 #0a2a66; font-variant-numeric: tabular-nums; }
+.pk-tr { position: absolute; top: 14px; right: 16px; display: flex; gap: 8px; align-items: center; }
+.pk-chip { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 20px; padding: 6px 12px; font-weight: 900; font-size: 15px; }
+.pk-chip b { font-family: var(--font-display); font-weight: 400; font-size: 18px; color: var(--yellow); }
+.pk-hint {
+  position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); max-width: calc(100% - 32px);
+  background: rgba(0,0,0,.45); padding: 9px 18px; border-radius: 22px; font-weight: 900; font-size: 15px; text-align: center;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
+}
+.pk-hint.show { opacity: 1; }
+.pk-banner {
+  position: absolute; left: 50%; top: 26%; transform: translate(-50%, -50%) scale(.6); pointer-events: none; white-space: nowrap;
+  font-family: var(--font-display); font-style: italic; font-size: clamp(30px, 7vw, 64px); color: var(--yellow);
+  text-shadow: 0 4px 0 #0a2a66, 0 0 24px rgba(0,0,0,.35); opacity: 0; transition: opacity .2s, transform .25s cubic-bezier(.3,1.6,.5,1);
+}
+.pk-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.pk-lock { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); background: rgba(0,0,0,.4); padding: 8px 16px; border-radius: 20px; font-weight: 900; font-size: 14px; pointer-events: none; animation: pulse 2s infinite; }
+
+/* ---------- touch controls ---------- */
+.touch { position: absolute; inset: 0; pointer-events: none; }
+.stick { position: absolute; left: 28px; bottom: 28px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.3); pointer-events: auto; touch-action: none; }
+.knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: rgba(255,255,255,.55); }
+.jump-btn { position: absolute; right: 28px; bottom: 36px; width: 96px; height: 96px; border-radius: 50%; border: 0; pointer-events: auto; touch-action: none;
+  background: linear-gradient(180deg, #fff27a, var(--yellow) 50%, #f7c600); box-shadow: inset 0 -6px 0 var(--yellow-dark); font-size: 40px; color: #3a2a00; font-weight: 900; }
+.jump-btn:active { transform: scale(.94); }
+.parkour.touching .pk-hint { bottom: 180px; }
+.parkour.touching .mute { top: 64px; bottom: auto; }
+
+/* ---------- overlays ---------- */
+.overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(5,20,60,.45); backdrop-filter: blur(3px); z-index: 4; padding: 16px; }
+.overlay .card {
+  width: min(420px, 100%); background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: 22px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; animation: pop .3s;
+}
+.overlay h2 { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 44px; color: var(--yellow); text-shadow: 0 3px 0 #0a2a66; }
+.overlay .stars { font-size: 40px; }
+.overlay .row { display: flex; gap: 8px; }
+.done-stats { display: flex; gap: 10px; width: 100%; }
+.done-stats div { flex: 1; background: rgba(255,255,255,.08); border-radius: 10px; padding: 8px 4px; display: flex; flex-direction: column; }
+.done-stats small { color: var(--muted); font-weight: 900; font-size: 11px; }
+.done-stats b { font-family: var(--font-display); font-weight: 400; font-size: 24px; }
+.done-stats span { font-size: 11px; font-weight: 900; color: #7dff6a; min-height: 14px; }
+.done-note { margin: 0; font-size: 13px; color: var(--muted); font-weight: 700; min-height: 1em; }
+
+@media (max-width: 760px) {
+  .menu-body { inset: 52px 0 0 0; padding-top: 16px; }
+  .pk-time { font-size: 30px; }
+  .pk-level { font-size: 14px; }
+  .pk-chip { padding: 4px 9px; font-size: 13px; }
+  .pk-chip b { font-size: 15px; }
+  .controls-help { display: none; }
+}

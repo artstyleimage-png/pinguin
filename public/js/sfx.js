@@ -58,4 +58,11 @@ export const sfx = {
   win() { [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, dur: 0.35, type: 'triangle', vol: 0.15, delay: i * 0.12 })); },
   lose() { [392, 330, 262].forEach((f, i) => tone({ freq: f, dur: 0.35, type: 'triangle', vol: 0.12, delay: i * 0.16 })); },
   crack() { noise({ dur: 0.35, vol: 0.25, filter: 5000 }); },
+  // parkour
+  jump() { tone({ freq: 320, to: 620, dur: 0.12, type: 'triangle', vol: 0.1 }); },
+  doubleJump() { tone({ freq: 480, to: 980, dur: 0.14, type: 'triangle', vol: 0.1 }); noise({ dur: 0.15, vol: 0.05, filter: 4000 }); },
+  land() { noise({ dur: 0.12, vol: 0.12, filter: 900 }); },
+  boing() { tone({ freq: 180, to: 720, dur: 0.35, type: 'sine', vol: 0.18 }); tone({ freq: 360, to: 1100, dur: 0.25, type: 'triangle', vol: 0.06, delay: 0.03 }); },
+  fish() { [880, 1320].forEach((f, i) => tone({ freq: f, dur: 0.12, type: 'square', vol: 0.05, delay: i * 0.07 })); },
+  checkpoint() { [659, 784, 988].forEach((f, i) => tone({ freq: f, dur: 0.18, type: 'triangle', vol: 0.12, delay: i * 0.09 })); },
 };

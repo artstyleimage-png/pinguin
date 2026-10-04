@@ -119,6 +119,7 @@ function renderProfile() {
   $('myName').textContent = p.name;
   $('statWins').textContent = p.wins;
   $('statSkins').textContent = `${p.owned.length}/${SKINS.length}`;
+  $('parkourLink').href = `parkour.html?skin=${encodeURIComponent(p.equipped)}`;
   if (state.locker) renderLocker();
 }
 

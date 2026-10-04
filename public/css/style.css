@@ -89,6 +89,7 @@ button { font-family: inherit; cursor: pointer; }
 .mode-card small { color: var(--muted); font-weight: 900; font-size: 11px; }
 .mode-card b { font-family: var(--font-display); font-size: 26px; font-style: italic; }
 .mode-card span { font-size: 12px; color: var(--muted); font-weight: 700; }
+.parkour-link { text-decoration: none; background: var(--panel); border: 1px solid var(--panel-border); padding: 8px 14px; }
 .queue-status { display: flex; gap: 12px; align-items: center; background: var(--panel); border-radius: 10px; padding: 10px 16px; border: 1px solid var(--panel-border); }
 .queue-status b { display: block; font-family: var(--font-display); font-size: 18px; }
 .queue-status small { color: var(--muted); font-weight: 900; }
@@ -191,6 +192,8 @@ button { font-family: inherit; cursor: pointer; }
   .play-area { right: 12px; bottom: 12px; }
   .mode-card { display: none; }
   .play-btn { font-size: 34px; padding: 10px 40px 8px; }
+  .parkour-link { margin-right: 46px; }
+  .parkour-link span { display: none; }
   .click-hint { display: none; }
   .locker { top: 58px; right: 10px; width: calc(100% - 20px); bottom: auto; height: 52%; }
   .hud-tc { top: 128px; width: 100%; }
