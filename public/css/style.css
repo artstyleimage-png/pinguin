@@ -89,6 +89,8 @@ button { font-family: inherit; cursor: pointer; }
 .mode-card small { color: var(--muted); font-weight: 900; font-size: 11px; }
 .mode-card b { font-family: var(--font-display); font-size: 26px; font-style: italic; }
 .mode-card span { font-size: 12px; color: var(--muted); font-weight: 700; }
+.city-link { pointer-events: auto; text-decoration: none; color: #1a1000; background: linear-gradient(180deg, #ffe066, #ffb21a); border: 2px solid #000; border-radius: 10px; padding: 6px 14px 4px; font-family: var(--font-display); font-size: 20px; display: flex; flex-direction: column; align-items: flex-end; box-shadow: 0 3px 0 #8a5a00; }
+.city-link small { font-family: inherit; font-size: 11px; font-weight: 900; opacity: 0.75; }
 .queue-status { display: flex; gap: 12px; align-items: center; background: var(--panel); border-radius: 10px; padding: 10px 16px; border: 1px solid var(--panel-border); }
 .queue-status b { display: block; font-family: var(--font-display); font-size: 18px; }
 .queue-status small { color: var(--muted); font-weight: 900; }

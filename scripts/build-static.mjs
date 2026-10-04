@@ -27,6 +27,13 @@ const head = html.match(/<head>([\s\S]*)<\/head>/)[1]
 const body = html.match(/<body>([\s\S]*)<\/body>/)[1];
 fs.writeFileSync(path.join(out, 'index.html'), `${head.trim()}\n${body.trim()}\n`);
 
+// Penguin City (open-world mode) is a second, full page under city/.
+fs.cpSync(path.join(root, 'public/city'), path.join(out, 'city'), { recursive: true });
+const cityHtml = fs.readFileSync(path.join(root, 'public/city/index.html'), 'utf8')
+  .replace('../vendor/three/build/three.module.js', `${cdn}/build/three.module.js`)
+  .replace('../vendor/three/examples/jsm/', `${cdn}/examples/jsm/`);
+fs.writeFileSync(path.join(out, 'city/index.html'), cityHtml);
+
 const files = [];
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Penguin City</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/city.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../vendor/three/build/three.module.js",
+        "three/addons/": "../vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="hud">
+    <div class="top-right">
+      <div id="weapon" class="weapon"><span id="wIcon">👊</span><div><b id="wName">Кулаки</b><small id="wAmmo"></small></div></div>
+      <div id="money" class="money">$00000000</div>
+      <div id="loot" class="loot hidden"></div>
+      <div id="wanted" class="wanted"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div>
+      <div id="fishCount" class="fish">🐟 0/0</div>
+    </div>
+    <div id="objective" class="objective"></div>
+    <div class="bottom-left">
+      <canvas id="minimap" width="200" height="200"></canvas>
+      <div class="bar hp"><div id="hpFill"></div></div>
+      <div id="nitro" class="bar nitro hidden"><div id="nitroFill"></div></div>
+    </div>
+    <div id="speedo" class="speedo hidden"></div>
+    <div id="drift" class="drift hidden"></div>
+    <div id="popups" class="popups"></div>
+    <div id="hint" class="hint hidden"></div>
+    <div id="progress" class="progress hidden"><span id="progressLabel"></span><div><div id="progressFill"></div></div></div>
+    <div id="crosshair" class="crosshair hidden"></div>
+    <div id="bigText" class="big hidden"></div>
+    <div id="vignette" class="vignette"></div>
+  </div>
+
+  <div id="fullmap" class="fullmap hidden"><canvas id="fullmapCanvas"></canvas><small>M — закрыть карту</small></div>
+
+  <div id="touch" class="touch hidden">
+    <div id="lookArea" class="look-area"></div>
+    <div id="stick" class="stick"><div id="knob" class="knob"></div></div>
+    <div class="tbtns">
+      <button data-btn="attack" class="tb big-btn">👊</button>
+      <button data-btn="jump" class="tb">⤒</button>
+      <button data-btn="crouch" class="tb">⤓</button>
+      <button data-btn="enter" class="tb">🚗</button>
+      <button data-btn="interact" class="tb">E</button>
+      <button data-btn="aim" class="tb">🎯</button>
+      <button data-btn="weapon" class="tb">🔁</button>
+      <button data-btn="map" class="tb">🗺</button>
+    </div>
+  </div>
+
+  <div id="menu" class="menu">
+    <div class="menu-card">
+      <div class="logo">PENGUIN<span>CITY</span></div>
+      <p class="tag">Открытый город пингвинов: грабь банки, угоняй всё, что ездит и летает, дрифтуй и паркурь по крышам.</p>
+      <button id="playBtn" class="play">ИГРАТЬ</button>
+      <div class="controls">
+        <div><h3>Пешком</h3>
+          <p><kbd>WASD</kbd> ходить · <kbd>Shift</kbd> бег · мышь — камера</p>
+          <p><kbd>Пробел</kbd> прыжок / залезть на уступ / отскок от стены</p>
+          <p><kbd>C</kbd> скольжение на пузе (сбивает прохожих как кегли)</p>
+          <p><kbd>ЛКМ</kbd> удар / выстрел · <kbd>ПКМ</kbd> прицел · <kbd>R</kbd> перезарядка</p>
+          <p><kbd>1-5</kbd> / колесо — оружие · <kbd>F</kbd> сесть / угнать</p>
+          <p><kbd>E</kbd> (держать) — взломать хранилище банка</p>
+        </div>
+        <div><h3>Транспорт</h3>
+          <p><kbd>W/S</kbd> газ / тормоз · <kbd>A/D</kbd> руль</p>
+          <p><kbd>Пробел</kbd> ручник — <b>дрифт</b> · <kbd>Shift</kbd> нитро</p>
+          <p>🚁 <kbd>Пробел</kbd>/<kbd>Shift</kbd> вверх/вниз, <kbd>W/S</kbd> наклон, <kbd>Q/E</kbd> вбок</p>
+          <p>🪖 танк: мышь — башня, <kbd>ЛКМ</kbd> — пушка</p>
+          <p><kbd>M</kbd> карта · <kbd>V</kbd> камера · <kbd>N</kbd> звук · <kbd>Esc</kbd> пауза</p>
+        </div>
+      </div>
+      <p class="tips">💰 Ограбь банк → оторвись от копов (или заедь на 🎨 ПОКРАСКУ) → отвези добычу в УБЕЖИЩЕ.<br>
+        🏁 Дрифт, трюки на трамплинах и 🐟 золотые рыбки на крышах тоже приносят деньги. Танки — на военной базе, вертолёты — на вертолётной площадке.</p>
+      <div class="menu-row">
+        <button id="muteBtn" class="ghost">🔊 Звук вкл</button>
+        <a class="ghost" href="../">🐧 Penguin Brawl</a>
+        <button id="resetBtn" class="ghost">Сбросить прогресс</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
