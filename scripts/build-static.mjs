@@ -54,6 +54,19 @@ const cityHead = cityPage.match(/<head>([\s\S]*)<\/head>/)[1]
 const cityBody = cityPage.match(/<body>([\s\S]*)<\/body>/)[1];
 fs.writeFileSync(path.join(cityOut, 'index.html'), `${cityHead.trim()}\n${cityBody.trim()}\n`);
 
+// Grand Prix Time Attack (public/f1) as its own hostable page, same treatment as above.
+const f1Out = path.join(root, 'dist/f1');
+fs.rmSync(f1Out, { recursive: true, force: true });
+fs.cpSync(path.join(root, 'public/f1'), f1Out, { recursive: true });
+const f1Page = fs.readFileSync(path.join(root, 'public/f1/index.html'), 'utf8')
+  .replace('../vendor/three/build/three.module.js', `${cdn}/build/three.module.js`)
+  .replace('../vendor/three/examples/jsm/', `${cdn}/examples/jsm/`);
+const f1Head = f1Page.match(/<head>([\s\S]*)<\/head>/)[1]
+  .replace(/\s*<meta charset[^>]*>/, '')
+  .replace(/\s*<meta name="viewport"[^>]*>/, '');
+const f1Body = f1Page.match(/<body>([\s\S]*)<\/body>/)[1];
+fs.writeFileSync(path.join(f1Out, 'index.html'), `${f1Head.trim()}\n${f1Body.trim()}\n`);
+
 const files = [];
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

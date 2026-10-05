@@ -100,7 +100,7 @@ test('serves the Penguin City open-world page and its modules', { timeout: 20000
     const page = await fetch(`http://localhost:${PORT}/city/`);
     assert.equal(page.status, 200);
     assert.match(await page.text(), /Penguin City/);
-    for (const f of ['/city/js/main.js', '/city/js/world.js', '/city/js/vehicles.js', '/js/penguin.js', '/shared/skins.js', '/vendor/three/build/three.module.js']) {
+    for (const f of ['/f1/', '/f1/js/main.js', '/f1/js/car.js', '/city/js/main.js', '/city/js/world.js', '/city/js/vehicles.js', '/js/penguin.js', '/shared/skins.js', '/vendor/three/build/three.module.js']) {
       const r = await fetch(`http://localhost:${PORT}${f}`);
       assert.equal(r.status, 200, f);
     }

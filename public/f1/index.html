@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Grand Prix Time Attack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/f1.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../vendor/three/build/three.module.js",
+        "three/addons/": "../vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="hud hidden">
+    <section class="tower" aria-label="Хронометраж">
+      <div class="tower-head"><span id="trackName">—</span><b id="lapNo">КРУГ 1</b></div>
+      <div class="cur"><span id="curTime">0:00.000</span><span id="delta" class="delta"></span></div>
+      <div class="sectors"><i id="s1">S1</i><i id="s2">S2</i><i id="s3">S3</i></div>
+      <dl class="rows">
+        <dt>Последний</dt><dd id="lastLap">—</dd>
+        <dt>Лучший</dt><dd id="bestLap">—</dd>
+        <dt>Рекорд трассы</dt><dd id="recordLap">—</dd>
+      </dl>
+      <div id="invalid" class="invalid hidden">КРУГ НЕ ЗАСЧИТАН</div>
+    </section>
+    <section id="polyBox" class="tower hidden" aria-label="Замеры">
+      <div class="tower-head"><span>ПОЛИГОН</span><b>ЗАМЕРЫ</b></div>
+      <dl class="rows">
+        <dt>0–100 км/ч</dt><dd id="acc100">—</dd>
+        <dt>0–200 км/ч</dt><dd id="acc200">—</dd>
+        <dt>0–300 км/ч</dt><dd id="acc300">—</dd>
+        <dt>Максималка</dt><dd id="vmax">—</dd>
+      </dl>
+      <p class="tip">Остановись полностью и стартуй — замер начнётся сам.</p>
+    </section>
+    <canvas id="minimap" width="240" height="240"></canvas>
+    <div class="dash">
+      <div id="leds" class="leds"></div>
+      <div class="dash-row">
+        <div class="speed"><b id="speed">0</b><small>км/ч</small></div>
+        <div class="gear"><b id="gear">1</b><small id="gearMode">АВТО</small></div>
+        <div class="rpm"><b id="rpm">4200</b><small>об/мин</small></div>
+      </div>
+    </div>
+    <div id="start" class="start-lights hidden"><i></i><i></i><i></i><i></i><i></i></div>
+    <div id="msg" class="msg"></div>
+    <div class="keys" id="keysHint">W/S газ·тормоз · A/D руль · E/Q передачи · C камера · R на трассу · Esc пауза</div>
+  </div>
+
+  <!-- ============ TOUCH ============ -->
+  <div id="touch" class="touch hidden">
+    <div class="tl">
+      <button data-k="left" aria-label="Влево">◀</button>
+      <button data-k="right" aria-label="Вправо">▶</button>
+    </div>
+    <div class="tr">
+      <div class="gears"><button data-k="up" aria-label="Передача вверх">▲</button><button data-k="down" aria-label="Передача вниз">▼</button></div>
+      <button data-k="brake" class="pedal brake">ТОРМОЗ</button>
+      <button data-k="gas" class="pedal gas">ГАЗ</button>
+    </div>
+    <div class="tt"><button data-k="cam" aria-label="Камера">🎥</button><button data-k="pause" aria-label="Пауза">❚❚</button></div>
+  </div>
+
+  <!-- ============ MENU ============ -->
+  <div id="menu" class="menu">
+    <header class="brand">
+      <div class="logo"><span class="stripe"></span>GRAND PRIX <em>TIME ATTACK</em></div>
+      <button id="mute" class="chip" type="button">Звук: вкл</button>
+    </header>
+    <div class="menu-grid">
+      <div class="col">
+        <h2>1 · Режим</h2>
+        <div class="seg" id="modes">
+          <button type="button" data-mode="trial" class="on">Заезд на время<small>старт со светофора, N кругов</small></button>
+          <button type="button" data-mode="free">Свободная езда<small>изучай трассу, круги без лимита</small></button>
+        </div>
+        <h2>2 · Трасса</h2>
+        <div id="tracks" class="tracks"></div>
+      </div>
+      <div class="col">
+        <h2>3 · Болид</h2>
+        <div id="cars" class="cars"></div>
+        <h2>4 · Настройки</h2>
+        <div class="opts">
+          <div class="opt"><span>Круги</span><div class="seg small" id="laps"><button type="button" data-laps="1">1</button><button type="button" data-laps="3" class="on">3</button><button type="button" data-laps="5">5</button><button type="button" data-laps="10">10</button></div></div>
+          <div class="opt"><span>Коробка</span><div class="seg small" id="box"><button type="button" data-box="auto" class="on">Автомат</button><button type="button" data-box="manual">Ручная</button></div></div>
+          <div class="opt"><span>Призрак рекорда</span><div class="seg small" id="ghostOpt"><button type="button" data-ghost="1" class="on">Вкл</button><button type="button" data-ghost="0">Выкл</button></div></div>
+        </div>
+        <button id="go" class="go" type="button">НА ТРАССУ</button>
+        <p class="ctrl">Клавиатура: <kbd>W</kbd>/<kbd>S</kbd> газ и тормоз, <kbd>A</kbd>/<kbd>D</kbd> руль, <kbd>E</kbd>/<kbd>Q</kbd> (или <kbd>Shift</kbd>/<kbd>Ctrl</kbd>) передачи, <kbd>C</kbd> камера, <kbd>R</kbd> вернуться на трассу. Задний ход: стоя на месте, держи тормоз. Работает и геймпад.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAUSE / RESULTS ============ -->
+  <div id="panel" class="panel hidden">
+    <div class="panel-card">
+      <h2 id="panelTitle">Пауза</h2>
+      <div id="panelBody"></div>
+      <div class="panel-actions">
+        <button id="resume" class="go small" type="button">Продолжить</button>
+        <button id="restart" class="chip" type="button">Заново</button>
+        <button id="toggleBox" class="chip" type="button">Коробка: авто</button>
+        <button id="toMenu" class="chip" type="button">В меню</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
