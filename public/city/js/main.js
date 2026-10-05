@@ -131,8 +131,15 @@ class Game {
     this.input.onLockChange = (locked) => {
       if (!locked && this.state === 'play' && !this.input.touch) this.pause();
     };
-    document.getElementById('resetBtn').addEventListener('click', () => {
-      if (!confirm('Сбросить деньги, оружие и найденных рыбок?')) return;
+    // two-step reset: the first click arms it, the second one wipes the save
+    const reset = document.getElementById('resetBtn');
+    reset.addEventListener('click', () => {
+      if (!reset.dataset.armed) {
+        reset.dataset.armed = '1';
+        reset.textContent = 'Точно сбросить? Нажми ещё раз';
+        setTimeout(() => { delete reset.dataset.armed; reset.textContent = 'Сбросить прогресс'; }, 4000);
+        return;
+      }
       try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
       location.reload();
     });

@@ -34,6 +34,26 @@ const cityHtml = fs.readFileSync(path.join(root, 'public/city/index.html'), 'utf
   .replace('../vendor/three/examples/jsm/', `${cdn}/examples/jsm/`);
 fs.writeFileSync(path.join(out, 'city/index.html'), cityHtml);
 
+// A self-contained copy of Penguin City with the game page at the root, for hosting the
+// open world on its own (no <html>/<head>/<body>: the host adds the document skeleton).
+const cityOut = path.join(root, 'dist/city');
+fs.rmSync(cityOut, { recursive: true, force: true });
+fs.cpSync(path.join(root, 'public/city/js'), path.join(cityOut, 'city/js'), { recursive: true });
+fs.cpSync(path.join(root, 'public/city/css'), path.join(cityOut, 'city/css'), { recursive: true });
+fs.mkdirSync(path.join(cityOut, 'js'));
+fs.copyFileSync(path.join(root, 'public/js/penguin.js'), path.join(cityOut, 'js/penguin.js'));
+fs.mkdirSync(path.join(cityOut, 'shared'));
+fs.copyFileSync(path.join(root, 'shared/skins.js'), path.join(cityOut, 'shared/skins.js'));
+const cityPage = cityHtml
+  .replace('href="css/city.css"', 'href="city/css/city.css"')
+  .replace('src="js/main.js"', 'src="city/js/main.js"')
+  .replace(/\s*<a class="ghost" href="\.\.\/">[^<]*<\/a>/, '');
+const cityHead = cityPage.match(/<head>([\s\S]*)<\/head>/)[1]
+  .replace(/\s*<meta charset[^>]*>/, '')
+  .replace(/\s*<meta name="viewport"[^>]*>/, '');
+const cityBody = cityPage.match(/<body>([\s\S]*)<\/body>/)[1];
+fs.writeFileSync(path.join(cityOut, 'index.html'), `${cityHead.trim()}\n${cityBody.trim()}\n`);
+
 const files = [];
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
