@@ -80,10 +80,28 @@ export function trackData(def) {
     wallL.push(k[i] > 0 ? inner : wallOff);
     wallR.push(k[i] < 0 ? inner : wallOff);
   }
+  // gravel traps on the outside of proper corners, grass elsewhere
+  const gravelL = [], gravelR = [];
+  for (let i = 0; i < n; i++) {
+    let kmax = 0, sgn = 0;
+    for (let j = -12; j <= 6; j++) { const c = k[(i + j + n) % n]; if (Math.abs(c) > kmax) { kmax = Math.abs(c); sgn = Math.sign(c); } }
+    const corner = kmax > 1 / 220 && def.runoff > 6;
+    gravelL.push(corner && sgn < 0); // right-hander: outside is on the left
+    gravelR.push(corner && sgn > 0);
+  }
+  // active-aero zones: at least ~250 m of nearly straight road ahead
+  const aeroZone = new Array(n).fill(false);
+  let run = 0;
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = n - 1; i >= 0; i--) {
+      run = Math.abs(k[i]) < 1 / 450 ? run + step : 0;
+      if (pass) aeroZone[i] = run > 220;
+    }
+  }
   let minY = Infinity, maxY = -Infinity;
   const box = new THREE.Box3();
   for (const p of pts) { minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); box.expandByPoint(p); }
-  return { def, pts, tan, nrm, curv: k, n, step, length, half, wallL, wallR, minY, maxY, box };
+  return { def, pts, tan, nrm, curv: k, n, step, length, half, wallL, wallR, gravelL, gravelR, aeroZone, minY, maxY, box };
 }
 
 /** Nearest centre-line sample around `hint` (or everywhere when hint < 0). */

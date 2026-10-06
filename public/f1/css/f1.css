@@ -37,6 +37,25 @@ h2 { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.16em;
 .seg button.on { border-color: var(--red); box-shadow: inset 4px 0 0 var(--red); }
 .seg button:disabled { opacity: 0.35; cursor: not-allowed; }
 .seg.small button { flex: 0 1 auto; font-size: 15px; padding: 6px 14px; text-align: center; }
+.legend { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 8px; }
+.legend i { display: inline-block; width: 14px; height: 3px; background: var(--green); vertical-align: middle; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tabs button { flex: 1 1 auto; background: transparent; border: 0; border-bottom: 2px solid var(--line); padding: 8px 6px; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.tabs button.on { color: var(--fg); border-bottom-color: var(--red); }
+.tab-page { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.opt-col { display: flex; flex-direction: column; gap: 6px; }
+.opt-col > span { font-weight: 600; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; box-shadow: 0 0 0 1px rgba(255,255,255,0.3); }
+.tyres-seg button small, .toggles button small { display: block; }
+.toggles button { text-align: left !important; }
+.spec { background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.spec summary { cursor: pointer; font-weight: 700; }
+.spec dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 8px 0 0; }
+.spec dt { color: var(--muted); }
+.spec dd { margin: 0; }
+.wheel-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sens { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.car b em { font-style: normal; color: var(--muted); font-size: 13px; }
 .tracks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
 .track { background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; padding: 10px; text-align: left; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .track.on { border-color: var(--red); background: #1b1416; }
@@ -45,6 +64,7 @@ h2 { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.16em;
 .track .meta { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--muted); }
 .track .rec { font-family: var(--mono); font-size: 12px; color: var(--purple); }
 .about { font-size: 14px; color: #c4cbd4; margin: 0; min-height: 2.6em; }
+.seg.small button small { font-size: 10px; }
 .cars { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
 .car { background: var(--panel-solid); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; text-align: left; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .car.on { border-color: var(--red); background: #1b1416; }
@@ -86,7 +106,31 @@ h2 { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.16em;
 #recordLap { color: var(--purple); }
 .invalid { background: var(--red); font-size: 12px; font-weight: 700; text-align: center; padding: 2px; letter-spacing: 0.08em; }
 .tip { margin: 0; font-size: 12px; color: var(--muted); }
-#minimap { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px; width: 200px; height: 200px; background: var(--panel); border-radius: 6px; }
+.right-col { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px; width: 200px; display: flex; flex-direction: column; gap: 8px; }
+#minimap { width: 200px; height: 200px; background: var(--panel); border-radius: 6px; }
+.car-state { background: var(--panel); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.tyres { display: flex; gap: 10px; align-items: center; }
+.tyres b { display: block; font-size: 13px; }
+.tyres small { color: var(--muted); font-family: var(--mono); }
+.tyre-grid { display: grid; grid-template-columns: 18px 18px; gap: 3px 10px; }
+.tyre-grid i { font-style: normal; height: 26px; border-radius: 4px; font-family: var(--mono); font-size: 9px; color: #08130c; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.track-state { font-weight: 700; color: var(--green); }
+.track-state.damp { color: var(--yellow); }
+.track-state.wet { color: #5aa8ff; }
+.cam { color: var(--muted); }
+.cam b { color: var(--fg); }
+.dash-row2 { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.ers { display: flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 0.1em; color: var(--muted); flex: 1; }
+.ers > div { flex: 1; height: 8px; background: #23272e; border-radius: 4px; overflow: hidden; }
+.ers i { display: block; height: 100%; width: 50%; background: var(--green); transition: width 0.2s; }
+.ers.deploy i { background: var(--yellow); }
+.ers.harvest i { background: #3c7bff; }
+.ers.boost span { color: var(--yellow); }
+.aero { font-size: 10px; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 3px; background: #23272e; color: var(--muted); white-space: nowrap; }
+.aero.zone { color: var(--fg); box-shadow: inset 0 0 0 1px var(--green); }
+.aero.on { background: var(--green); color: #04210f; font-weight: 700; }
+.hud.min .tower, .hud.min .right-col, .hud.min .keys, .hud.min .dash { display: none; }
+.visor { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
 .dash { position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--panel); border-radius: 10px; padding: 8px 14px 10px; display: flex; flex-direction: column; gap: 6px; }
 .leds { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
 .leds i { height: 9px; border-radius: 5px; background: #23272e; }
@@ -143,7 +187,9 @@ h2 { margin: 8px 0 0; font-size: 13px; font-weight: 700; letter-spacing: 0.16em;
   .menu-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .tower { width: 200px; padding: 8px 10px; }
   #curTime { font-size: 22px; }
-  #minimap { width: 120px; height: 120px; }
+  .right-col { width: 130px; }
+  #minimap { width: 130px; height: 130px; }
+  .car-state { display: none; }
   .tt { right: 146px; }
   .dash { bottom: auto; top: max(10px, env(safe-area-inset-top)); padding: 6px 10px; transform: translateX(-50%) scale(0.8); transform-origin: top center; }
   .keys { display: none; }

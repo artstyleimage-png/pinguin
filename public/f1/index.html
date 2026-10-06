@@ -18,10 +18,11 @@
 </head>
 <body>
   <canvas id="view"></canvas>
+  <canvas id="visor" class="visor"></canvas>
 
   <!-- ============ HUD ============ -->
   <div id="hud" class="hud hidden">
-    <section class="tower" aria-label="Хронометраж">
+    <section id="tower" class="tower" aria-label="Хронометраж">
       <div class="tower-head"><span id="trackName">—</span><b id="lapNo">КРУГ 1</b></div>
       <div class="cur"><span id="curTime">0:00.000</span><span id="delta" class="delta"></span></div>
       <div class="sectors"><i id="s1">S1</i><i id="s2">S2</i><i id="s3">S3</i></div>
@@ -42,18 +43,30 @@
       </dl>
       <p class="tip">Остановись полностью и стартуй — замер начнётся сам.</p>
     </section>
-    <canvas id="minimap" width="240" height="240"></canvas>
+    <div class="right-col">
+      <canvas id="minimap" width="240" height="240"></canvas>
+      <div class="car-state">
+        <div class="tyres"><div id="tyreBox" class="tyre-grid"><i></i><i></i><i></i><i></i></div>
+          <div><b id="compound">Medium C3</b><small id="tyreWear">износ 0%</small></div></div>
+        <div id="trackState" class="track-state">Трасса сухая</div>
+        <div class="cam">Камера: <b id="camName">Кокпит</b> <kbd>C</kbd></div>
+      </div>
+    </div>
     <div class="dash">
       <div id="leds" class="leds"></div>
       <div class="dash-row">
         <div class="speed"><b id="speed">0</b><small>км/ч</small></div>
-        <div class="gear"><b id="gear">1</b><small id="gearMode">АВТО</small></div>
-        <div class="rpm"><b id="rpm">4200</b><small>об/мин</small></div>
+        <div id="gearBox" class="gear"><b id="gear">1</b><small id="gearMode">АВТО</small></div>
+        <div class="rpm"><b id="rpm">5000</b><small>об/мин</small></div>
+      </div>
+      <div class="dash-row2">
+        <div id="ers" class="ers"><span>БАТАРЕЯ</span><div><i id="ersFill"></i></div></div>
+        <div id="aero" class="aero">АЭРО: ПОВОРОТ</div>
       </div>
     </div>
     <div id="start" class="start-lights hidden"><i></i><i></i><i></i><i></i><i></i></div>
     <div id="msg" class="msg"></div>
-    <div class="keys" id="keysHint">W/S газ·тормоз · A/D руль · E/Q передачи · C камера · R на трассу · Esc пауза</div>
+    <div class="keys" id="keysHint">W/S газ·тормоз · A/D руль · E/Q передачи · Пробел аэро · X обгон · C камера · H HUD · R на трассу · Esc пауза</div>
   </div>
 
   <!-- ============ TOUCH ============ -->
@@ -67,7 +80,7 @@
       <button data-k="brake" class="pedal brake">ТОРМОЗ</button>
       <button data-k="gas" class="pedal gas">ГАЗ</button>
     </div>
-    <div class="tt"><button data-k="cam" aria-label="Камера">🎥</button><button data-k="pause" aria-label="Пауза">❚❚</button></div>
+    <div class="tt"><button data-k="boost" aria-label="Обгон">⚡</button><button data-k="aero" aria-label="Аэро">◇</button><button data-k="cam" aria-label="Камера">🎥</button><button data-k="pause" aria-label="Пауза">❚❚</button></div>
   </div>
 
   <!-- ============ MENU ============ -->
@@ -83,21 +96,60 @@
           <button type="button" data-mode="trial" class="on">Заезд на время<small>старт со светофора, N кругов</small></button>
           <button type="button" data-mode="free">Свободная езда<small>изучай трассу, круги без лимита</small></button>
         </div>
-        <h2>2 · Трасса</h2>
+        <h2>2 · Трасса <span class="legend"><i></i> зоны активной аэродинамики</span></h2>
         <div id="tracks" class="tracks"></div>
+        <p id="about" class="about"></p>
       </div>
       <div class="col">
-        <h2>3 · Болид</h2>
-        <div id="cars" class="cars"></div>
-        <h2>4 · Настройки</h2>
-        <div class="opts">
+        <nav class="tabs" aria-label="Настройки заезда">
+          <button type="button" data-tab="car">3 · Болид</button>
+          <button type="button" data-tab="cond">4 · Условия</button>
+          <button type="button" data-tab="set">5 · Настройки</button>
+        </nav>
+        <div class="tab-page" data-tab="car">
+          <div id="cars" class="cars"></div>
+          <details class="spec">
+            <summary>Технические данные болида (регламент 2026)</summary>
+            <dl>
+              <dt>Масса</dt><dd>768 кг минимум (в игре 800 кг с пилотом)</dd>
+              <dt>Колёсная база / ширина</dt><dd>3,4 м / 1,9 м</dd>
+              <dt>Силовая установка</dt><dd>V6 1,6 л турбо ≈ 400 кВт + электромотор 350 кВт (≈ 50/50)</dd>
+              <dt>Обороты</dt><dd>лимит 15 000 об/мин, 8 передач</dd>
+              <dt>Аэродинамика</dt><dd>активные крылья: режим «поворот» и режим «прямая» вместо DRS</dd>
+              <dt>Батарея</dt><dd>заряжается при торможении, отдаёт 350 кВт; режим обгона держит мощность до 337 км/ч</dd>
+              <dt>Шины</dt><dd>18″, сухие C1–C5 (Hard белые, Medium жёлтые, Soft красные), Inter зелёные, Wet синие</dd>
+              <dt>Скорость</dt><dd>до ≈ 350 км/ч, торможение и повороты до 4–5 g</dd>
+            </dl>
+          </details>
+        </div>
+        <div class="tab-page hidden" data-tab="cond">
+          <div class="opt-col"><span>Погода</span><div class="seg small" id="weather"></div></div>
+          <div class="opt-col"><span>Время суток</span><div class="seg small" id="timeOfDay"></div></div>
+          <div class="opt-col"><span>Шины</span><div class="seg small tyres-seg" id="tyres"></div><p id="tyreTip" class="tip"></p></div>
           <div class="opt"><span>Круги</span><div class="seg small" id="laps"><button type="button" data-laps="1">1</button><button type="button" data-laps="3" class="on">3</button><button type="button" data-laps="5">5</button><button type="button" data-laps="10">10</button></div></div>
+        </div>
+        <div class="tab-page hidden" data-tab="set">
           <div class="opt"><span>Коробка</span><div class="seg small" id="box"><button type="button" data-box="auto" class="on">Автомат</button><button type="button" data-box="manual">Ручная</button></div></div>
           <div class="opt"><span>Призрак рекорда</span><div class="seg small" id="ghostOpt"><button type="button" data-ghost="1" class="on">Вкл</button><button type="button" data-ghost="0">Выкл</button></div></div>
+          <div class="opt-col"><span>Помощники (выключи всё — будет как у настоящих пилотов)</span><div class="seg small toggles" id="assists"></div></div>
+          <div class="opt-col"><span>Графика</span><div class="seg small" id="quality"></div></div>
+          <div class="opt-col"><span>Руль и педали</span>
+            <div class="wheel-row"><button id="wheelSetup" class="chip" type="button">Настроить педали</button><button id="wheelClear" class="chip hidden" type="button">Сбросить</button>
+              <label class="sens">Чувствительность руля <input id="wheelSens" type="range" min="1" max="3" step="0.1" value="1.6"></label></div>
+            <p id="wheelStatus" class="tip"></p>
+          </div>
         </div>
         <button id="go" class="go" type="button">НА ТРАССУ</button>
-        <p class="ctrl">Клавиатура: <kbd>W</kbd>/<kbd>S</kbd> газ и тормоз, <kbd>A</kbd>/<kbd>D</kbd> руль, <kbd>E</kbd>/<kbd>Q</kbd> (или <kbd>Shift</kbd>/<kbd>Ctrl</kbd>) передачи, <kbd>C</kbd> камера, <kbd>R</kbd> вернуться на трассу. Задний ход: стоя на месте, держи тормоз. Работает и геймпад.</p>
+        <p class="ctrl"><kbd>W</kbd>/<kbd>S</kbd> газ и тормоз, <kbd>A</kbd>/<kbd>D</kbd> руль, <kbd>E</kbd>/<kbd>Q</kbd> передачи, <kbd>Пробел</kbd> активная аэро (если авто-аэро выкл.), <kbd>X</kbd> режим обгона, <kbd>C</kbd> камера, <kbd>H</kbd> скрыть HUD, <kbd>R</kbd> на трассу. Задний ход: стоя на месте, держи тормоз. Работают геймпад и руль.</p>
       </div>
+    </div>
+  </div>
+
+  <div id="wizard" class="panel hidden">
+    <div class="panel-card">
+      <h2>Настройка педалей</h2>
+      <p id="wizardText" class="about"></p>
+      <div class="panel-actions"><button id="wizardNext" class="go small" type="button">Дальше</button><button id="wizardCancel" class="chip" type="button">Отмена</button></div>
     </div>
   </div>
 

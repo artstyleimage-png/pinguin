@@ -38,9 +38,23 @@ function init() {
   const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = 700; nf.Q.value = 0.7;
   const ng = ctx.createGain(); ng.gain.value = 0;
   ns.connect(nf).connect(ng).connect(master);
-  for (const o of [o1, o2, o3, tw]) o.start();
-  ns.start();
-  eng = { o1, o2, o3, lp, g, tw, twg, ng, nf, buf };
+  // tyre squeal: narrow band noise
+  const ts = ctx.createBufferSource(); ts.buffer = buf; ts.loop = true;
+  const tf = ctx.createBiquadFilter(); tf.type = 'bandpass'; tf.frequency.value = 1100; tf.Q.value = 9;
+  const tg = ctx.createGain(); tg.gain.value = 0;
+  ts.connect(tf).connect(tg).connect(master);
+  // electric motor whine (MGU-K) while deploying / harvesting
+  const ew = ctx.createOscillator(); ew.type = 'triangle';
+  const eg = ctx.createGain(); eg.gain.value = 0;
+  ew.connect(eg).connect(master);
+  // rain on the car
+  const rs = ctx.createBufferSource(); rs.buffer = buf; rs.loop = true;
+  const rf = ctx.createBiquadFilter(); rf.type = 'highpass'; rf.frequency.value = 2500;
+  const rgn = ctx.createGain(); rgn.gain.value = 0;
+  rs.connect(rf).connect(rgn).connect(master);
+  for (const o of [o1, o2, o3, tw, ew]) o.start();
+  ns.start(); ts.start(); rs.start(0.7);
+  eng = { o1, o2, o3, lp, g, tw, twg, ng, nf, buf, tg, tf, ew, eg, rgn };
 }
 
 function set(p, v, k = 0.03) { if (ctx && Number.isFinite(v)) p.setTargetAtTime(v, ctx.currentTime, k); }
@@ -80,7 +94,7 @@ export const audio = {
   },
   engine(rpm, throttle, speed, on = true, limiter = false) {
     if (!eng) return;
-    const f = (rpm / 60) * 1.5; // firing frequency of a V6 is rpm/60*3, played an octave down
+    const f = (rpm / 60) * 1.5; // a V6 fires rpm/60*3 times a second; played an octave down
     set(eng.o1.frequency, f, 0.015);
     set(eng.o2.frequency, f * 0.5, 0.015);
     set(eng.o3.frequency, f * 2.01, 0.015);
@@ -93,10 +107,22 @@ export const audio = {
     set(eng.nf.frequency, 400 + speed * 12, 0.2);
   },
   shift() { if (eng && !muted) { eng.g.gain.cancelScheduledValues(ctx.currentTime); eng.g.gain.setValueAtTime(0.02, ctx.currentTime); } tone(140, 0.05, 'square', 0.06); },
+  aero(on) { tone(on ? 1200 : 700, 0.06, 'sine', 0.08); },
   deny() { tone(220, 0.12, 'square', 0.08); tone(180, 0.15, 'square', 0.08, 0.1); },
   light() { tone(880, 0.18, 'sine', 0.2); },
   go() { tone(1320, 0.4, 'sine', 0.25); },
   lap(best) { (best ? [784, 988, 1175, 1568] : [659, 880]).forEach((f, i) => tone(f, 0.25, 'triangle', 0.16, i * 0.11)); },
   wall(power) { thump(Math.min(0.9, 0.15 + power * 0.03)); },
+  tyres(amount, speed) {
+    if (!eng) return;
+    set(eng.tg.gain, Math.min(0.16, amount * 0.16), 0.05);
+    set(eng.tf.frequency, 900 + Math.min(speed, 80) * 6, 0.1);
+  },
+  ers(level, speed) {
+    if (!eng) return;
+    set(eng.ew.frequency, 900 + speed * 45, 0.05);
+    set(eng.eg.gain, level * 0.018, 0.08);
+  },
+  rain(level) { if (eng) set(eng.rgn.gain, level * 0.08, 0.5); },
   kerb(on) { if (eng) set(eng.nf.Q, on ? 6 : 0.7, 0.02); },
 };
