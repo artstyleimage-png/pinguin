@@ -129,15 +129,15 @@ export class Weather {
     const sunCol = new THREE.Color(0xfff4e6).lerp(new THREE.Color(0xff9a52), warm * 0.85);
     this.sun.color.copy(night ? new THREE.Color(0xdfe8ff) : sunCol);
     this.sun.intensity = night ? 0.9 : lerp(2.5, 0.45, c) * (elev < 6 ? 0.6 : 1);
-    this.hemi.intensity = night ? 0.5 : lerp(0.45, 0.9, c);
+    this.hemi.intensity = night ? 0.5 : lerp(0.45, 0.9, c) * (1 - 0.45 * this.rain);
     this.hemi.color.set(night ? 0x8090b0 : warm ? 0xffd2b0 : 0xdfeaf5);
     this.hemi.groundColor.set(night ? 0x1a1a20 : 0x4a4636);
     // fog colour follows the horizon
-    const fogCol = night ? new THREE.Color(0x0d1018) : new THREE.Color(0xc5d3df).lerp(new THREE.Color(0x8d959c), Math.max(c - 0.4, 0) * 1.4);
+    const fogCol = night ? new THREE.Color(0x0d1018) : new THREE.Color(0xc5d3df).lerp(new THREE.Color(0x8d959c), Math.max(c - 0.4, 0) * 1.4).lerp(new THREE.Color(0x5d656c), this.rain * 0.6);
     if (warm) fogCol.lerp(new THREE.Color(0xe8a878), warm * 0.5);
     this.fog.color.copy(fogCol);
     this.fog.density = this.fogD;
-    this.renderer.toneMappingExposure = night ? 0.9 : lerp(0.82, 0.95, c) * (warm ? 0.95 : 1);
+    this.renderer.toneMappingExposure = night ? 0.9 : lerp(0.82, 0.95, c) * (warm ? 0.95 : 1) * (1 - 0.25 * this.rain);
 
     if (rebuildEnv) {
       // reflections: render the sky into a PMREM environment
@@ -155,7 +155,7 @@ export class Weather {
       if (this.envRT) this.envRT.dispose();
       this.envRT = rt;
       this.scene.environment = rt.texture;
-      this.scene.environmentIntensity = night ? 0.12 : lerp(0.2, 0.3, c);
+      this.scene.environmentIntensity = night ? 0.12 : lerp(0.2, 0.3, c) * (1 - 0.4 * this.rain);
       pm.dispose();
     }
   }
