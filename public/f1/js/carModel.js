@@ -124,7 +124,7 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
   const g = new THREE.Group();
   const carb = TX.carbon();
   const extra = ghost ? { transparent: true, opacity: 0.32, depthWrite: false } : {};
-  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.25, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08, ...extra });
+  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.1, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.12, ...extra });
   const paint2 = new THREE.MeshPhysicalMaterial({ color: spec.second, metalness: 0.2, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1, ...extra });
   const accent = new THREE.MeshPhysicalMaterial({ color: spec.accent, metalness: 0.2, roughness: 0.4, clearcoat: 0.6, ...extra });
   const cf = new THREE.MeshStandardMaterial({ map: carb.map, normalMap: carb.normalMap, normalScale: new THREE.Vector2(0.4, 0.4), roughness: 0.38, metalness: 0.3, ...extra });
@@ -236,7 +236,7 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
     new THREE.Vector3(-0.37, 0.8, 0.2), new THREE.Vector3(-0.38, 0.95, 0.42), new THREE.Vector3(-0.26, 1.0, 0.74),
     new THREE.Vector3(0, 1.02, 0.86), new THREE.Vector3(0.26, 1.0, 0.74), new THREE.Vector3(0.38, 0.95, 0.42), new THREE.Vector3(0.37, 0.8, 0.2),
   ]);
-  mesh(new THREE.TubeGeometry(haloCurve, 48, 0.036, 10), paint, g);
+  mesh(new THREE.TubeGeometry(haloCurve, 48, 0.03, 10), paint, g);
   mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(0, 1.02, 0.86), new THREE.Vector3(0, 0.92, 1.0), new THREE.Vector3(0, 0.78, 1.12)]), 12, 0.03, 8), paint, g);
 
   // ---------- driver ----------

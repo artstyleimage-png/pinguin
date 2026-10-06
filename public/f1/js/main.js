@@ -454,7 +454,7 @@ class Game {
       const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
       const comp = new EffectComposer(this.renderer, rt);
       comp.addPass(new RenderPass(scene, this.camera));
-      comp.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), night ? 0.55 : 0.22, 0.5, night ? 0.75 : 0.92));
+      comp.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), night ? 0.5 : 0.12, 0.4, night ? 0.85 : 1.4));
       comp.addPass(new OutputPass());
       comp.setPixelRatio(this.renderer.getPixelRatio());
       comp.setSize(innerWidth, innerHeight);
@@ -892,15 +892,15 @@ class Game {
     if (this.camMode <= 1) {
       grp.updateMatrixWorld();
       const eye = this.camMode === 0
-        ? new THREE.Vector3(this.headX, 0.94 + (Math.random() - 0.5) * shake, 0.36 + this.headZ)
+        ? new THREE.Vector3(this.headX, 0.9 + (Math.random() - 0.5) * shake, 0.3 + this.headZ)
         : new THREE.Vector3(0, 1.22 + (Math.random() - 0.5) * shake * 0.5, 0.1);
-      const look = this.camMode === 0 ? new THREE.Vector3(this.headX * 2, 0.62, 8) : new THREE.Vector3(0, 0.75, 8);
+      const look = this.camMode === 0 ? new THREE.Vector3(this.headX * 2, 0.72, 8) : new THREE.Vector3(0, 0.75, 8);
       eye.applyMatrix4(grp.matrixWorld);
       look.applyMatrix4(grp.matrixWorld);
       this.camera.position.copy(eye);
       this.camera.up.set(0, 1, 0).applyAxisAngle(new THREE.Vector3(Math.sin(c.yaw), 0, Math.cos(c.yaw)), -this.headX * 0.8);
       this.camera.lookAt(look);
-      fov = this.camMode === 0 ? 74 + Math.min(10, sp * 0.1) : 64 + Math.min(10, sp * 0.1);
+      fov = this.camMode === 0 ? 78 + Math.min(8, sp * 0.08) : 64 + Math.min(10, sp * 0.1);
       this.camPos = null;
     } else {
       const f = new THREE.Vector3(Math.sin(c.yaw), 0, Math.cos(c.yaw));

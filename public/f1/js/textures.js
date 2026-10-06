@@ -88,7 +88,7 @@ export function asphalt() {
       const i = y * W + x;
       const u = x / W;
       let v = 0.27 + fine[i] * 0.12 + (coarse[i] - 0.5) * 0.06;
-      if (r() < 0.04) v += 0.12 * r(); // light stones
+      if (r() < 0.04) v += 0.06 * r(); // light stones
       if (r() < 0.03) v -= 0.08 * r();
       // rubber laid down on the racing line
       const line = Math.exp(-(((u - 0.5) / 0.16) ** 2));
@@ -113,7 +113,7 @@ export function asphalt() {
     rimg.data[i * 4 + 3] = 255;
   }
   rg.putImageData(rimg, 0, 0);
-  cache.asphalt = { map: tex(c), roughnessMap: tex(rc, { srgb: false }), normalMap: normalFromHeight(height, W, H, 3) };
+  cache.asphalt = { map: tex(c), roughnessMap: tex(rc, { srgb: false }), normalMap: normalFromHeight(height, W, H, 1.6) };
   return cache.asphalt;
 }
 

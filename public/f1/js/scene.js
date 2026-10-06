@@ -269,7 +269,7 @@ export function buildTrackScene(scene, T, { night = false, quality = 1 } = {}) {
 
   // the racing surface
   const as = TX.asphalt();
-  const asphaltMat = new THREE.MeshStandardMaterial({ map: as.map, roughnessMap: as.roughnessMap, normalMap: as.normalMap, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 1 });
+  const asphaltMat = new THREE.MeshStandardMaterial({ map: as.map, roughnessMap: as.roughnessMap, normalMap: as.normalMap, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 1 });
   add(scene, ribbon(T, half + 0.15, -half - 0.15, { vScale: T.def.width }), asphaltMat);
   wet.push({ mat: asphaltMat, rough: 1, color: new THREE.Color(0xffffff) });
 
@@ -664,8 +664,7 @@ export function buildPolygon(scene, { night = false, quality = 1 } = {}) {
 export function setWetness(list, w) {
   for (const { mat, rough, color } of list) {
     mat.roughness = lerp(rough, 0.18, w);
-    mat.color.copy(color).multiplyScalar(1 - 0.42 * w);
-    mat.envMapIntensity = lerp(1, 2.2, w);
-    mat.metalness = lerp(0, 0.15, w);
+    mat.color.copy(color).multiplyScalar(1 - 0.5 * w);
+    mat.envMapIntensity = lerp(1, 1.5, w);
   }
 }
