@@ -976,8 +976,9 @@ class Game {
     if (this.wetT > 0.5) { this.wetT = 0; setWetness(this.world.wet, this.weather.wetness); }
 
     const events = [];
-    const drive = held ? { ...inp, throttle: 0, brake: 1, steer: 0, aeroToggle: false } : inp;
+    const drive = held ? { ...inp, throttle: 0, brake: 0, steer: 0, aeroToggle: false } : inp;
     c.update(dt, drive, events);
+    if (held) { c.vx = c.vy = c.r = 0; c.gear = 1; } // parked on the grid until the lights go out
     this.lastBrake = drive.brake;
     if (held) c.rpm = 5000 + inp.throttle * 6500;
     for (const e of events) {
