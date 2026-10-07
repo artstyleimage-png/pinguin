@@ -20,14 +20,16 @@ function ring(w, h, n, seg) {
 function loft(sections, { seg = 48, capStart = true, capEnd = true } = {}) {
   const pos = [];
   const idx = [];
-  for (const s of sections) {
+  const uv = [];
+  sections.forEach((s, k) => {
     const pts = ring(s.w, s.h, s.n ?? 2.6, seg);
-    for (const [x, y] of pts) {
+    pts.forEach(([x, y], i) => {
+      uv.push(i / seg, k / Math.max(1, sections.length - 1));
       // flatten the underside: real tubs sit on a flat floor
       const yy = y < 0 ? y * (s.flat ?? 1) : y;
       pos.push((s.x ?? 0) + x, s.y + yy, s.z);
-    }
-  }
+    });
+  });
   const S = sections.length;
   for (let k = 0; k < S - 1; k++) {
     for (let i = 0; i < seg; i++) {
@@ -39,6 +41,7 @@ function loft(sections, { seg = 48, capStart = true, capEnd = true } = {}) {
     const s = sections[k];
     const ci = pos.length / 3;
     pos.push(s.x ?? 0, s.y, s.z);
+    uv.push(0.5, 0.5);
     for (let i = 0; i < seg; i++) {
       const a = k * seg + i, b = k * seg + ((i + 1) % seg);
       if (flip) idx.push(ci, b, a); else idx.push(ci, a, b);
@@ -48,6 +51,7 @@ function loft(sections, { seg = 48, capStart = true, capEnd = true } = {}) {
   if (capEnd) cap(S - 1, false);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geo.setIndex(idx);
   geo.computeVertexNormals();
   return geo;
@@ -125,10 +129,11 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
   const carb = TX.carbonReal();
   const extra = ghost ? { transparent: true, opacity: 0.32, depthWrite: false } : {};
   const flakes = TX.flakes();
-  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.35, roughness: 0.42, normalMap: flakes, normalScale: new THREE.Vector2(0.08, 0.08), clearcoat: 0.7, clearcoatRoughness: 0.08, envMapIntensity: 0.7, ...extra });
+  // satin livery (most modern liveries are semi-matt) with a light clearcoat and fine flake
+  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.2, roughness: 0.48, normalMap: flakes, normalScale: new THREE.Vector2(0.06, 0.06), clearcoat: 0.35, clearcoatRoughness: 0.22, envMapIntensity: 0.55, ...extra });
   const paint2 = new THREE.MeshPhysicalMaterial({ color: spec.second, metalness: 0.2, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1, ...extra });
   const accent = new THREE.MeshPhysicalMaterial({ color: spec.accent, metalness: 0.2, roughness: 0.4, clearcoat: 0.6, ...extra });
-  const cf = new THREE.MeshPhysicalMaterial({ map: carb.map, normalMap: carb.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.45, metalness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.15, color: 0x8a8a8a, ...extra });
+  const cf = new THREE.MeshPhysicalMaterial({ map: carb.map, normalMap: carb.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.45, metalness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.15, color: 0x2e2e30, ...extra });
   const black = new THREE.MeshStandardMaterial({ color: 0x08090a, roughness: 0.6, metalness: 0.1, ...extra });
   const metal = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.25, metalness: 0.95, ...extra });
   const rubber = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.78, metalness: 0, ...extra });
@@ -161,7 +166,7 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
   mesh(new THREE.BoxGeometry(0.08, 0.05, 0.16), new THREE.MeshStandardMaterial({ color: number % 2 ? 0x111111 : 0xffd400, roughness: 0.5, ...extra }), g, [0, 1.09, 0.1]);
 
   // cockpit opening and headrest
-  mesh(new THREE.CircleGeometry(0.5, 32), black, g, [0, 0.796, 0.62], [-Math.PI / 2 + 0.06, 0, 0], [0.58, 1.05, 1]);
+  mesh(new THREE.CircleGeometry(0.5, 32), new THREE.MeshBasicMaterial({ color: 0x050506, ...extra }), g, [0, 0.796, 0.6], [-Math.PI / 2 + 0.06, 0, 0], [0.56, 0.8, 1]);
   mesh(loft([{ z: 0.32, w: 0.66, h: 0.12, y: 0.82, n: 2.2 }, { z: 0.1, w: 0.7, h: 0.18, y: 0.84, n: 2.4 }]), black, g);
 
   // ---------- sidepods ----------
@@ -253,8 +258,8 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
   const cockpit = new THREE.Group();
   g.add(cockpit);
   const sw = new THREE.Group();
-  sw.position.set(0, 0.7, 0.8);
-  sw.rotation.x = -0.35;
+  sw.position.set(0, 0.79, 0.74);
+  sw.rotation.x = -0.6;
   cockpit.add(sw);
   const swShape = new THREE.Shape();
   swShape.moveTo(-0.14, -0.06); swShape.lineTo(-0.15, 0.05); swShape.quadraticCurveTo(-0.12, 0.085, 0, 0.085); swShape.quadraticCurveTo(0.12, 0.085, 0.15, 0.05); swShape.lineTo(0.14, -0.06); swShape.quadraticCurveTo(0, -0.1, -0.14, -0.06);

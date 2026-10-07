@@ -929,7 +929,7 @@ class Game {
     if (this.camMode <= 1) {
       grp.updateMatrixWorld();
       const eye = this.camMode === 0
-        ? new THREE.Vector3(this.headX, 0.9 + (Math.random() - 0.5) * shake, 0.3 + this.headZ)
+        ? new THREE.Vector3(this.headX, 0.95 + (Math.random() - 0.5) * shake, 0.3 + this.headZ)
         : new THREE.Vector3(0, 1.22 + (Math.random() - 0.5) * shake * 0.5, 0.1);
       const look = this.camMode === 0 ? new THREE.Vector3(this.headX * 2, 0.72, 8) : new THREE.Vector3(0, 0.75, 8);
       eye.applyMatrix4(grp.matrixWorld);
