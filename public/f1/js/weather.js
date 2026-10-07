@@ -180,7 +180,7 @@ export class Weather {
     const target = this.night ? 0.05 : 0.55;
     const k = THREE.MathUtils.clamp(target / Math.max(a.mean, 1e-4), 0.25, 4);
     this.baseK = k;
-    this.hasSun = a.peak > 800 && !this.preset.overcast;
+    this.hasSun = a.peak > 800 && !this.preset.overcast && !this.night;
     // the sun: from the panorama, but never so low that the shadows are useless
     const d = a.dir.clone();
     if (this.night || !this.hasSun) d.set(0.3, 1, 0.2).normalize();
@@ -225,7 +225,8 @@ export class Weather {
     const fogCol = (this.horizon || new THREE.Color(0xc5d3df)).clone();
     // keep the fog in a believable range regardless of panorama brightness
     const m = Math.max(fogCol.r, fogCol.g, fogCol.b);
-    if (m > 0.85) fogCol.multiplyScalar(0.85 / m);
+    const cap = this.night ? 0.035 : 0.85;
+    if (m > cap) fogCol.multiplyScalar(cap / m);
     fogCol.lerp(new THREE.Color(0x59616a), r * 0.5);
     this.fog.color.copy(fogCol);
     this.fog.density = this.fogD;

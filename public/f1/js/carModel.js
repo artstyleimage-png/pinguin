@@ -125,7 +125,7 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
   const carb = TX.carbonReal();
   const extra = ghost ? { transparent: true, opacity: 0.32, depthWrite: false } : {};
   const flakes = TX.flakes();
-  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.35, roughness: 0.42, normalMap: flakes, normalScale: new THREE.Vector2(0.08, 0.08), clearcoat: 1, clearcoatRoughness: 0.06, ...extra });
+  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.35, roughness: 0.42, normalMap: flakes, normalScale: new THREE.Vector2(0.08, 0.08), clearcoat: 0.7, clearcoatRoughness: 0.08, envMapIntensity: 0.7, ...extra });
   const paint2 = new THREE.MeshPhysicalMaterial({ color: spec.second, metalness: 0.2, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1, ...extra });
   const accent = new THREE.MeshPhysicalMaterial({ color: spec.accent, metalness: 0.2, roughness: 0.4, clearcoat: 0.6, ...extra });
   const cf = new THREE.MeshPhysicalMaterial({ map: carb.map, normalMap: carb.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.45, metalness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.15, color: 0x8a8a8a, ...extra });

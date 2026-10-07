@@ -70,7 +70,7 @@ export class FX {
   spray(p, vel, amount) {
     this.smoke.emit(p.x + (Math.random() - 0.5) * 0.8, p.y + 0.3, p.z + (Math.random() - 0.5) * 0.8, {
       vx: vel.x * 0.6 + (Math.random() - 0.5) * 3, vy: 1 + Math.random() * 2, vz: vel.z * 0.6 + (Math.random() - 0.5) * 3,
-      life: 0.9 + Math.random() * 0.6, size: 1.2 + Math.random() * 1.5, grow: 3.5, color: 0xc9d0d6, alpha: 0.22 * amount, drag: 2.2,
+      life: 0.7 + Math.random() * 0.5, size: 1.0 + Math.random() * 1.2, grow: 3, color: 0xc9d0d6, alpha: 0.13 * amount, drag: 2.4,
     });
   }
 

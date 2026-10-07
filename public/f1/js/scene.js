@@ -183,7 +183,7 @@ export function buildGround(scene, theme, y, quality, night = false) {
     const r = TX.rng(77);
     const n = quality ? 160 : 80;
     const fac = TX.facade();
-    const bm = TX.worldUV(new THREE.MeshStandardMaterial({ map: fac.map, emissiveMap: fac.emissiveMap, emissive: night ? 0xffffff : 0x000000, emissiveIntensity: night ? 1.4 : 0, roughness: 0.45, metalness: 0.4 }), 26);
+    const bm = TX.worldUV(new THREE.MeshStandardMaterial({ map: fac.map, emissiveMap: fac.emissiveMap, emissive: night ? 0xffffff : 0x000000, emissiveIntensity: night ? 0.55 : 0, roughness: 0.45, metalness: 0.4 }), 26);
     const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), bm, n);
     const m4 = new THREE.Matrix4();
     for (let i = 0; i < n; i++) {
@@ -576,7 +576,7 @@ function buildTrackside(scene, T, r, out, night, quality) {
 function buildCityBlocks(scene, T, r, quality, night) {
   const n = quality >= 1 ? 260 : 140;
   const fac = TX.facade();
-  const bm = TX.worldUV(new THREE.MeshStandardMaterial({ map: fac.map, emissiveMap: fac.emissiveMap, emissive: night ? 0xffffff : 0x000000, emissiveIntensity: night ? 1.4 : 0, roughness: 0.45, metalness: 0.35 }), 26);
+  const bm = TX.worldUV(new THREE.MeshStandardMaterial({ map: fac.map, emissiveMap: fac.emissiveMap, emissive: night ? 0xffffff : 0x000000, emissiveIntensity: night ? 0.55 : 0, roughness: 0.45, metalness: 0.35 }), 26);
   const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), bm, n);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
   const palette = [0xd9c7a8, 0xc9a68a, 0xa9b8c8, 0xe6e2da, 0x8f9aa6, 0xd5b18a, 0x6f7f8f];
@@ -655,8 +655,8 @@ export function buildPolygon(scene, { night = false, quality = 1 } = {}) {
 /** Wet look: darker, glossier surfaces that mirror the sky. */
 export function setWetness(list, w) {
   for (const { mat, rough, color } of list) {
-    mat.roughness = lerp(rough, 0.18, w);
-    mat.color.copy(color).multiplyScalar(1 - 0.5 * w);
-    mat.envMapIntensity = lerp(1, 1.5, w);
+    mat.roughness = lerp(rough, 0.3, w);
+    mat.color.copy(color).multiplyScalar(1 - 0.55 * w);
+    mat.envMapIntensity = lerp(1, 1.1, w);
   }
 }

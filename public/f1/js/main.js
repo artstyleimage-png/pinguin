@@ -909,7 +909,7 @@ class Game {
     // spray from the rear tyres in the wet
     const w = this.weather.wetness;
     if (w > 0.15 && sp > 12) {
-      const n = Math.min(4, Math.floor(w * sp / 12));
+      const n = Math.min(2, Math.floor(w * sp / 18));
       for (let i = 0; i < n; i++) for (const sx of [-1, 1]) this.fx.spray(world(sx * DIM.rearX, DIM.rearZ - 0.6), vel, w);
     }
     // sparks off the plank at speed (bumps, kerbs)
