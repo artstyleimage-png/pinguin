@@ -235,24 +235,71 @@ export function clouds(coverage, seed = 5) {
   return tex(c);
 }
 
-/** Foliage card: clusters of leaves with alpha. */
+/** Foliage card: a dense clump of individually shaded leaves with alpha. */
 export function leaves(hue = [0.22, 0.38, 0.14], seed = 3) {
   const key = `leaves${hue}${seed}`;
   if (cache[key]) return cache[key];
-  const [c, g] = canvas(256, 256);
+  const S = 512;
+  const [c, g] = canvas(S, S);
   const r = rng(seed);
-  g.clearRect(0, 0, 256, 256);
-  for (let k = 0; k < 1400; k++) {
-    const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 118;
-    const x = 128 + Math.cos(a) * d, y = 128 + Math.sin(a) * d * 0.95;
-    const l = 0.55 + r() * 0.65 - (d / 118) * 0.15 + (y < 128 ? 0.15 : -0.05);
-    g.fillStyle = `rgb(${hue.map((v) => Math.min(255, v * l * 255)).join(',')})`;
+  g.clearRect(0, 0, S, S);
+  const leaf = (x, y, len, ang, l) => {
+    g.save();
+    g.translate(x, y);
+    g.rotate(ang);
+    const col = hue.map((v) => Math.min(255, v * l * 255));
+    const grd = g.createLinearGradient(0, -len * 0.3, 0, len * 0.3);
+    grd.addColorStop(0, `rgb(${col.map((v) => Math.min(255, v * 1.25)).join(',')})`);
+    grd.addColorStop(1, `rgb(${col.map((v) => v * 0.7).join(',')})`);
+    g.fillStyle = grd;
     g.beginPath();
-    g.ellipse(x, y, 3 + r() * 4, 1.5 + r() * 2.5, r() * Math.PI, 0, Math.PI * 2);
+    g.moveTo(-len / 2, 0);
+    g.quadraticCurveTo(0, -len * 0.32, len / 2, 0);
+    g.quadraticCurveTo(0, len * 0.32, -len / 2, 0);
     g.fill();
+    g.strokeStyle = `rgba(${col.map((v) => Math.min(255, v * 1.5)).join(',')},0.5)`;
+    g.lineWidth = 0.8;
+    g.beginPath(); g.moveTo(-len / 2, 0); g.lineTo(len / 2, 0); g.stroke();
+    g.restore();
+  };
+  // twigs
+  g.strokeStyle = 'rgba(70,52,34,0.9)';
+  for (let k = 0; k < 14; k++) {
+    g.lineWidth = 1 + r() * 2;
+    g.beginPath();
+    g.moveTo(S / 2, S * 0.95);
+    g.quadraticCurveTo(S / 2 + (r() - 0.5) * S * 0.5, S * 0.6, S * 0.1 + r() * S * 0.8, S * 0.1 + r() * S * 0.6);
+    g.stroke();
+  }
+  for (let k = 0; k < 2600; k++) {
+    const a = r() * Math.PI * 2, d = Math.sqrt(r()) * S * 0.46;
+    const x = S / 2 + Math.cos(a) * d, y = S / 2 + Math.sin(a) * d * 0.92;
+    // inner leaves are in shadow, the top catches light
+    const l = 0.45 + r() * 0.5 - (1 - d / (S * 0.46)) * 0.25 + (y < S / 2 ? 0.18 : -0.05);
+    leaf(x, y, 9 + r() * 9, r() * Math.PI, l);
   }
   cache[key] = tex(c, { repeat: false });
   return cache[key];
+}
+
+/** Bark: vertical fissures. */
+export function bark() {
+  if (cache.bark) return cache.bark;
+  const W = 128, H = 256;
+  const n = noiseField(W, H, 23, 4, 4);
+  const [c, g] = canvas(W, H);
+  const img = g.createImageData(W, H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    const fiss = Math.abs(Math.sin(x * 0.35 + n[i] * 8)) ** 0.4;
+    const v = 0.18 + fiss * 0.22 + n[i] * 0.1;
+    img.data[i * 4] = v * 255 * 1.1; img.data[i * 4 + 1] = v * 255 * 0.9; img.data[i * 4 + 2] = v * 255 * 0.7; img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = tex(c);
+  t.repeat.set(2, 3);
+  cache.bark = t;
+  return t;
 }
 
 /** Crowd for grandstands. */
@@ -313,4 +360,181 @@ export function lightPool() {
   g.fillRect(0, 0, 128, 128);
   cache.pool = tex(c, { repeat: false });
   return cache.pool;
+}
+
+/** Photographed grass (three.js example texture). Cloned per use so each can have its own repeat. */
+let grassPhoto = null;
+export function photoGrass(repeatX = 1, repeatY = 1) {
+  if (!grassPhoto) {
+    grassPhoto = new THREE.TextureLoader().load('assets/grass.jpg');
+    grassPhoto.colorSpace = THREE.SRGBColorSpace;
+    grassPhoto.wrapS = grassPhoto.wrapT = THREE.RepeatWrapping;
+    grassPhoto.anisotropy = 8;
+  }
+  const t = grassPhoto.clone();
+  t.repeat.set(repeatX, repeatY);
+  return t;
+}
+
+/** Office-block facade: window grid (map) and lit windows for the night (emissive). */
+export function facade() {
+  if (cache.facade) return cache.facade;
+  const W = 256, H = 256;
+  const [c, g] = canvas(W, H);
+  const [e, eg] = canvas(W, H);
+  const r = rng(5);
+  g.fillStyle = '#8a9099';
+  g.fillRect(0, 0, W, H);
+  eg.fillStyle = '#000';
+  eg.fillRect(0, 0, W, H);
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+    const px = x * 32 + 4, py = y * 32 + 6;
+    const grd = g.createLinearGradient(px, py, px, py + 22);
+    grd.addColorStop(0, '#5d7487'); grd.addColorStop(1, '#2a3846');
+    g.fillStyle = grd;
+    g.fillRect(px, py, 24, 22);
+    g.fillStyle = 'rgba(255,255,255,0.12)';
+    g.fillRect(px, py, 24, 3);
+    if (r() < 0.35) { eg.fillStyle = r() < 0.5 ? '#ffd9a0' : '#fff2d6'; eg.fillRect(px, py, 24, 22); }
+  }
+  const map = tex(c), em = tex(e);
+  cache.facade = { map, emissiveMap: em };
+  return cache.facade;
+}
+
+/**
+ * Patches a standard material so its textures are sampled in world space
+ * (box sides use x/z + y, tops use x/z). Works with InstancedMesh.
+ */
+export function worldUV(material, scale = 8) {
+  material.onBeforeCompile = (sh) => {
+    sh.uniforms.uvScale = { value: 1 / scale };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN;')
+      .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+        vec4 wp4 = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          wp4 = instanceMatrix * wp4;
+        #endif
+        wp4 = modelMatrix * wp4;
+        vWP = wp4.xyz;
+        vWN = normalize(mat3(modelMatrix) * objectNormal);`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWP; varying vec3 vWN; uniform float uvScale;')
+      .replace('#include <map_fragment>', `
+        vec2 wuv = abs(vWN.y) > 0.5 ? vWP.xz : (abs(vWN.x) > abs(vWN.z) ? vec2(vWP.z, vWP.y) : vec2(vWP.x, vWP.y));
+        wuv *= uvScale;
+        #ifdef USE_MAP
+          diffuseColor *= texture2D(map, wuv);
+        #endif`)
+      .replace('#include <emissivemap_fragment>', `
+        #ifdef USE_EMISSIVEMAP
+          totalEmissiveRadiance *= texture2D(emissiveMap, wuv).rgb * step(0.5, 1.0 - abs(vWN.y));
+        #endif`);
+  };
+  return material;
+}
+
+/** Photographed-quality carbon weave from the three.js examples (falls back to the procedural one). */
+let carbonPhoto = null;
+export function carbonReal() {
+  if (!carbonPhoto) {
+    const l = new THREE.TextureLoader();
+    const map = l.load('assets/carbon.png');
+    const normalMap = l.load('assets/carbon_normal.png');
+    map.colorSpace = THREE.SRGBColorSpace;
+    for (const t of [map, normalMap]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 10); t.anisotropy = 8; }
+    carbonPhoto = { map, normalMap };
+  }
+  return carbonPhoto;
+}
+
+/** Fine metallic-flake normal map for car paint. */
+export function flakes() {
+  if (cache.flakes) return cache.flakes;
+  const S = 256;
+  const [c, g] = canvas(S, S);
+  const img = g.createImageData(S, S);
+  const r = rng(77);
+  for (let i = 0; i < S * S; i++) {
+    const nx = (r() - 0.5) * 0.5, ny = (r() - 0.5) * 0.5;
+    img.data[i * 4] = (nx * 0.5 + 0.5) * 255; img.data[i * 4 + 1] = (ny * 0.5 + 0.5) * 255; img.data[i * 4 + 2] = 255; img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = tex(c, { srgb: false });
+  t.repeat.set(30, 30);
+  cache.flakes = t;
+  return t;
+}
+
+/** Tyre sidewall: lettering and compound band on black rubber (u around the tyre, v across the profile). */
+export function sidewall(compoundColor, label) {
+  const key = `side${compoundColor}${label}`;
+  if (cache[key]) return cache[key];
+  const W = 2048, H = 128;
+  const [c, g] = canvas(W, H);
+  g.fillStyle = '#121212';
+  g.fillRect(0, 0, W, H);
+  // subtle moulding texture
+  const r = rng(3);
+  for (let k = 0; k < 4000; k++) { g.fillStyle = `rgba(255,255,255,${r() * 0.03})`; g.fillRect(r() * W, r() * H, 2, 1); }
+  for (const vy of [0.18, 0.82]) {
+    const y = vy * H;
+    g.fillStyle = compoundColor;
+    g.fillRect(0, y - 3, W, 6);
+    g.font = '900 22px "Titillium Web", Arial, sans-serif';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#e8e8e8';
+    for (let k = 0; k < 4; k++) {
+      g.save();
+      g.translate(k * (W / 4) + 60, y + (vy < 0.5 ? 14 : -14));
+      if (vy > 0.5) g.scale(1, -1);
+      g.fillText(`APEX RACING  ·  ${label}`, 0, 0);
+      g.restore();
+    }
+  }
+  const t = tex(c);
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  cache[key] = t;
+  return t;
+}
+
+/** Helmet livery: team colours with stripes and a number (sphere UV). */
+export function helmetLivery(main, second, num) {
+  const key = `helmet${main}${second}${num}`;
+  if (cache[key]) return cache[key];
+  const W = 512, H = 256;
+  const [c, g] = canvas(W, H);
+  const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
+  g.fillStyle = hex(second);
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = hex(main);
+  g.beginPath();
+  g.moveTo(0, H * 0.55); g.bezierCurveTo(W * 0.3, H * 0.35, W * 0.7, H * 0.75, W, H * 0.5); g.lineTo(W, H); g.lineTo(0, H); g.fill();
+  g.fillStyle = '#ffffff';
+  g.fillRect(0, H * 0.18, W, 6);
+  g.font = 'italic 900 60px "Titillium Web", Arial, sans-serif';
+  g.textAlign = 'center';
+  g.fillText(String(num), W * 0.5, H * 0.35);
+  g.fillText(String(num), 0, H * 0.35);
+  g.fillText(String(num), W, H * 0.35);
+  cache[key] = tex(c, { repeat: false });
+  return cache[key];
+}
+
+/** Soft dark blob for contact shadows under the car. */
+export function blobShadow() {
+  if (cache.blob) return cache.blob;
+  const [c, g] = canvas(128, 256);
+  const grd = g.createRadialGradient(64, 128, 10, 64, 128, 64);
+  grd.addColorStop(0, 'rgba(0,0,0,0.75)');
+  grd.addColorStop(0.6, 'rgba(0,0,0,0.4)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.save();
+  g.scale(1, 2);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 128, 128);
+  g.restore();
+  cache.blob = tex(c, { repeat: false });
+  return cache.blob;
 }

@@ -1,86 +1,155 @@
 import * as THREE from 'three';
-import { Sky } from 'three/addons/objects/Sky.js';
-import * as TX from './textures.js';
+import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 
+// Photographed skies (CC0 HDR panoramas from Poly Haven) light the whole scene and are seen as the background.
 export const WEATHERS = {
-  clear: { name: 'Ясно', clouds: 0.12, rain: 0, fog: 0.00035 },
-  cloudy: { name: 'Облачно', clouds: 0.8, rain: 0, fog: 0.0006 },
-  drizzle: { name: 'Дождик', clouds: 0.92, rain: 0.35, fog: 0.0011 },
-  rain: { name: 'Ливень', clouds: 1, rain: 1, fog: 0.0022 },
-  fog: { name: 'Туман', clouds: 0.55, rain: 0, fog: 0.0065 },
-  changeable: { name: 'Переменная', clouds: 0.5, rain: 0, fog: 0.0006, dynamic: true },
+  clear: { name: 'Ясно', rain: 0, fog: 0.00028 },
+  cloudy: { name: 'Облачно', rain: 0, fog: 0.0006, overcast: true },
+  drizzle: { name: 'Дождик', rain: 0.35, fog: 0.0011, overcast: true },
+  rain: { name: 'Ливень', rain: 1, fog: 0.0022, overcast: true },
+  fog: { name: 'Туман', rain: 0, fog: 0.0065, overcast: true },
+  changeable: { name: 'Переменная', rain: 0, fog: 0.0006, overcast: true, dynamic: true },
 };
 export const TIMES = {
-  morning: { name: 'Утро', elev: 12, azim: 100 },
-  day: { name: 'День', elev: 52, azim: 160 },
-  sunset: { name: 'Закат', elev: 3.5, azim: 255 },
-  night: { name: 'Ночь', elev: -18, azim: 200 },
+  morning: { name: 'Утро' },
+  day: { name: 'День' },
+  sunset: { name: 'Закат' },
+  night: { name: 'Ночь' },
 };
+
+/** Which panorama to use for the chosen conditions. */
+export function pickSky(weather, time, theme) {
+  const w = WEATHERS[weather] || WEATHERS.clear;
+  if (time === 'night') return theme === 'street' ? 'moonless_golf_1k' : 'dikhololo_night_1k';
+  if (w.overcast) return 'blouberg_sunrise_2_1k';
+  if (time === 'morning') return 'spruit_sunrise_1k';
+  if (time === 'sunset') return theme === 'street' ? 'venice_sunset_1k' : 'kiara_1_dawn_1k';
+  return 'quarry_01_1k';
+}
+
+const cache = new Map();
+/**
+ * Panoramas ship as lossless PNGs (left half RGB mantissas, right half exponent in R),
+ * decoded here to linear float RGB and uploaded as a half-float equirect texture.
+ */
+function loadHDR(name) {
+  if (!cache.has(name)) {
+    cache.set(name, (async () => {
+      const res = await fetch(`assets/${name}.sky.png`);
+      if (!res.ok) throw new Error(`sky ${name}: ${res.status}`);
+      const bmp = await createImageBitmap(await res.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+      const W = bmp.width, w = W / 2, h = bmp.height;
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = h;
+      const g = cv.getContext('2d', { willReadFrequently: true });
+      g.drawImage(bmp, 0, 0);
+      const px = g.getImageData(0, 0, W, h).data;
+      const f = new Float32Array(w * h * 4);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const m = (y * W + x) * 4, e = (y * W + x + w) * 4;
+          const k = px[e] ? 2 ** (px[e] - 136) : 0;
+          const o = (y * w + x) * 4;
+          f[o] = px[m] * k; f[o + 1] = px[m + 1] * k; f[o + 2] = px[m + 2] * k; f[o + 3] = 1;
+        }
+      }
+      const half = new Uint16Array(f.length);
+      for (let i = 0; i < f.length; i++) half[i] = THREE.DataUtils.toHalfFloat(Math.min(f[i], 65000));
+      const t = new THREE.DataTexture(half, w, h, THREE.RGBAFormat, THREE.HalfFloatType);
+      t.flipY = true;
+      t.colorSpace = THREE.LinearSRGBColorSpace;
+      t.minFilter = t.magFilter = THREE.LinearFilter;
+      t.generateMipmaps = false;
+      t.mapping = THREE.EquirectangularReflectionMapping;
+      t.needsUpdate = true;
+      t.userData.float = f; // kept for analysing the sun position
+      return t;
+    })());
+  }
+  return cache.get(name);
+}
+
+let flareTex = null;
+function flareTextures() {
+  if (!flareTex) {
+    const l = new THREE.TextureLoader();
+    flareTex = [l.load('assets/flare0.png'), l.load('assets/flare3.png')];
+    for (const t of flareTex) t.colorSpace = THREE.SRGBColorSpace;
+  }
+  return flareTex;
+}
+
+/** Brightest direction, its colour, and the average horizon colour of an equirect HDR. */
+function analyse(tex) {
+  const data = tex.userData.float;
+  const { width: w, height: h } = tex.image;
+  let best = 0, bi = 0, sum = 0;
+  for (let i = 0; i < w * h; i++) {
+    const l = data[i * 4] + data[i * 4 + 1] + data[i * 4 + 2];
+    sum += l;
+    if (l > best) { best = l; bi = i; }
+  }
+  const x = bi % w, y = Math.floor(bi / w);
+  const elev = (0.5 - (y + 0.5) / h) * Math.PI;
+  const phi = ((x + 0.5) / w - 0.5) * Math.PI * 2;
+  // three.js equirect: u = atan2(dir.z, dir.x) / 2pi + 0.5
+  const dir = new THREE.Vector3(Math.cos(phi) * Math.cos(elev), Math.sin(elev), Math.sin(phi) * Math.cos(elev)).normalize();
+  const avg = (y0, y1) => {
+    const c = new THREE.Color(0, 0, 0);
+    let n = 0;
+    for (let yy = y0; yy < y1; yy++) for (let xx = 0; xx < w; xx += 2) {
+      const i = (yy * w + xx) * 4;
+      c.r += data[i]; c.g += data[i + 1]; c.b += data[i + 2]; n++;
+    }
+    return c.multiplyScalar(1 / n);
+  };
+  const horizon = avg(Math.floor(h * 0.44), Math.floor(h * 0.5));
+  // colour of the light near the sun (a few pixels around the peak, clamped)
+  const sun = new THREE.Color(0, 0, 0);
+  let n = 0;
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+    const xx = (x + dx + w) % w, yy = Math.min(h - 1, Math.max(0, y + dy));
+    const i = (yy * w + xx) * 4;
+    sun.r += data[i]; sun.g += data[i + 1]; sun.b += data[i + 2]; n++;
+  }
+  sun.multiplyScalar(1 / n);
+  const m = Math.max(sun.r, sun.g, sun.b) || 1;
+  sun.multiplyScalar(1 / m);
+  return { dir, peak: best / 3, mean: sum / (w * h * 3), horizon, sunColor: sun };
+}
 
 const lerp = (a, b, t) => a + (b - a) * t;
 
-/** Sky, sun, clouds, fog, rain and track wetness for one session. */
 export class Weather {
-  constructor(scene, renderer, { weather = 'clear', time = 'day', quality = 1 }) {
+  constructor(scene, renderer, { weather = 'clear', time = 'day', quality = 1, theme = 'park' }) {
     this.scene = scene;
     this.renderer = renderer;
     this.preset = WEATHERS[weather] || WEATHERS.clear;
-    this.time = TIMES[time] || TIMES.day;
-    this.night = this.time.elev < 0;
+    this.timeKey = time;
+    this.night = time === 'night';
     this.quality = quality;
-    // current (smoothed) conditions
-    this.clouds = this.preset.clouds;
     this.rain = this.preset.rain;
     this.fogD = this.preset.fog;
     this.wetness = this.preset.rain > 0 ? 0.25 + this.preset.rain * 0.7 : 0;
     this.dynT = 60 + Math.random() * 60;
-    this.target = { ...this.preset };
+    this.target = { rain: this.rain, fog: this.fogD };
+    this.skyName = pickSky(weather, time, theme);
 
-    // physical sky
-    const sky = new Sky();
-    sky.scale.setScalar(4000);
-    this.sky = sky;
-    scene.add(sky);
-    // overcast dome dims the sky as clouds thicken
-    this.dome = new THREE.Mesh(new THREE.SphereGeometry(3800, 32, 16), new THREE.MeshBasicMaterial({ color: 0x8a9096, side: THREE.BackSide, transparent: true, depthWrite: false, fog: false }));
-    scene.add(this.dome);
-    // cloud layer
-    this.cloudTex = TX.clouds(Math.min(1, this.clouds + 0.1));
-    this.cloudTex.repeat.set(3, 3);
-    this.cloudMat = new THREE.MeshBasicMaterial({ map: this.cloudTex, transparent: true, depthWrite: false, fog: false, opacity: 0.9 });
-    this.cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000), this.cloudMat);
-    this.cloudMesh.rotation.x = Math.PI / 2;
-    this.cloudMesh.position.y = 700;
-    scene.add(this.cloudMesh);
-    // stars at night
-    if (this.night) {
-      const pos = [];
-      for (let i = 0; i < 1500; i++) {
-        const u = Math.random(), t = Math.random() * Math.PI * 2;
-        const y = 0.1 + u * 0.9;
-        const r = Math.sqrt(1 - y * y);
-        pos.push(Math.cos(t) * r * 3500, y * 3500, Math.sin(t) * r * 3500);
-      }
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      this.stars = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.8 }));
-      scene.add(this.stars);
-    }
-
-    // lights
-    this.sun = new THREE.DirectionalLight(0xffffff, 3);
+    this.sun = new THREE.DirectionalLight(0xffffff, 2);
     this.sun.castShadow = true;
     const sm = quality >= 2 ? 4096 : quality >= 1 ? 2048 : 1024;
     this.sun.shadow.mapSize.set(sm, sm);
     const sc = this.sun.shadow.camera;
-    sc.left = sc.bottom = -45; sc.right = sc.top = 45; sc.near = 1; sc.far = 500;
-    this.sun.shadow.bias = -0.0003;
-    this.sun.shadow.normalBias = 0.03;
+    sc.left = sc.bottom = -40; sc.right = sc.top = 40; sc.near = 1; sc.far = 600;
+    this.sun.shadow.bias = -0.0002;
+    this.sun.shadow.normalBias = 0.02;
+    this.sun.shadow.radius = 3;
     scene.add(this.sun, this.sun.target);
-    this.hemi = new THREE.HemisphereLight(0xdfeaf5, 0x4a4636, 0.6);
+    this.hemi = new THREE.HemisphereLight(0xdfeaf5, 0x3a3a30, 0.15);
     scene.add(this.hemi);
     this.fog = new THREE.FogExp2(0xc8d4de, this.fogD);
     scene.fog = this.fog;
+    this.sunDir = new THREE.Vector3(0.3, 0.6, 0.2).normalize();
 
     // rain streaks around the camera
     const N = quality >= 2 ? 6000 : quality >= 1 ? 3500 : 1800;
@@ -91,113 +160,103 @@ export class Weather {
     rg.setAttribute('position', new THREE.BufferAttribute(this.rainPos, 3).setUsage(THREE.DynamicDrawUsage));
     rg.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
     this.rainGeo = rg;
-    this.rainMesh = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0xc8d2dc, transparent: true, opacity: 0.32, depthWrite: false }));
+    this.rainMesh = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0xb8c2cc, transparent: true, opacity: 0.28, depthWrite: false }));
     this.rainMesh.frustumCulled = false;
     scene.add(this.rainMesh);
 
-    this.applySky(true);
+    this.ready = loadHDR(this.skyName).then((tex) => this.applyHDR(tex)).catch((e) => { console.warn('sky load failed', e); this.fallback(); });
   }
 
-  sunDir() {
-    const phi = THREE.MathUtils.degToRad(90 - this.time.elev);
-    const theta = THREE.MathUtils.degToRad(this.time.azim);
-    return new THREE.Vector3().setFromSphericalCoords(1, phi, theta);
+  applyHDR(tex) {
+    const a = analyse(tex);
+    this.info = a;
+    const scene = this.scene;
+    scene.background = tex;
+    const pm = new THREE.PMREMGenerator(this.renderer);
+    this.envRT = pm.fromEquirectangular(tex);
+    pm.dispose();
+    scene.environment = this.envRT.texture;
+    // normalise brightness between panoramas, then dim for rain
+    const target = this.night ? 0.05 : 0.55;
+    const k = THREE.MathUtils.clamp(target / Math.max(a.mean, 1e-4), 0.25, 4);
+    this.baseK = k;
+    this.hasSun = a.peak > 800 && !this.preset.overcast;
+    // the sun: from the panorama, but never so low that the shadows are useless
+    const d = a.dir.clone();
+    if (this.night || !this.hasSun) d.set(0.3, 1, 0.2).normalize();
+    else if (d.y < 0.3) { d.y = 0.3; d.normalize(); }
+    this.sunDir = d;
+    this.sun.color.copy(this.night ? new THREE.Color(0xdfe6ff) : this.hasSun ? a.sunColor : new THREE.Color(0xe8eef4));
+    this.horizon = a.horizon.clone().multiplyScalar(k);
+    if (this.hasSun && this.quality >= 1) {
+      const [f0, f3] = flareTextures();
+      const light = new THREE.PointLight(0xffffff, 0, 0);
+      const lf = new Lensflare();
+      lf.addElement(new LensflareElement(f0, 170, 0, this.sun.color));
+      lf.addElement(new LensflareElement(f3, 60, 0.6));
+      lf.addElement(new LensflareElement(f3, 70, 0.7));
+      lf.addElement(new LensflareElement(f3, 120, 0.9));
+      lf.addElement(new LensflareElement(f3, 70, 1.0));
+      light.add(lf);
+      this.flare = light;
+      scene.add(light);
+    }
+    this.applyLevels();
   }
 
-  /** Updates sky colours, lights and the environment map for the current cloud cover. */
-  applySky(rebuildEnv) {
-    const u = this.sky.material.uniforms;
-    const c = this.clouds;
-    const elev = this.time.elev;
-    u.turbidity.value = lerp(2.5, 14, c);
-    u.rayleigh.value = elev < 10 ? 2.6 : lerp(1.2, 3, c);
-    u.mieCoefficient.value = lerp(0.004, 0.02, c);
-    u.mieDirectionalG.value = 0.82;
-    const dir = this.sunDir();
-    u.sunPosition.value.copy(dir);
-    const night = this.night;
-    const warm = elev < 15 && !night ? 1 - elev / 15 : 0;
-    // overcast dome colour/opacity
-    const grey = night ? 0x0b0e14 : new THREE.Color(0x9aa1a8).lerp(new THREE.Color(0x6a7078), this.rain).getHex();
-    this.dome.material.color.set(grey);
-    this.dome.material.opacity = night ? 0.85 : c * 0.82;
-    this.cloudMat.opacity = night ? 0.25 : 0.25 + c * 0.75;
-    this.cloudMat.color.set(night ? 0x222833 : new THREE.Color(0xffffff).lerp(new THREE.Color(0x7d8389), this.rain));
-    if (warm) this.cloudMat.color.lerp(new THREE.Color(0xffb27a), warm * 0.6);
+  /** Fallback when the panorama cannot be loaded: flat sky colour. */
+  fallback() {
+    this.scene.background = new THREE.Color(this.night ? 0x0b0e16 : 0x9cc0e0);
+    this.horizon = new THREE.Color(this.night ? 0x0b0e16 : 0xc5d3df);
+    this.baseK = 1;
+    this.hemi.intensity = 0.9;
+    this.applyLevels();
+  }
 
-    // sun (or floodlights at night)
-    const sunCol = new THREE.Color(0xfff4e6).lerp(new THREE.Color(0xff9a52), warm * 0.85);
-    this.sun.color.copy(night ? new THREE.Color(0xdfe8ff) : sunCol);
-    this.sun.intensity = night ? 0.9 : lerp(2.5, 0.45, c) * (elev < 6 ? 0.6 : 1);
-    this.hemi.intensity = night ? 0.5 : lerp(0.45, 0.9, c) * (1 - 0.45 * this.rain);
-    this.hemi.color.set(night ? 0x8090b0 : warm ? 0xffd2b0 : 0xdfeaf5);
-    this.hemi.groundColor.set(night ? 0x1a1a20 : 0x4a4636);
-    // fog colour follows the horizon
-    const fogCol = night ? new THREE.Color(0x0d1018) : new THREE.Color(0xc5d3df).lerp(new THREE.Color(0x8d959c), Math.max(c - 0.4, 0) * 1.4).lerp(new THREE.Color(0x5d656c), this.rain * 0.6);
-    if (warm) fogCol.lerp(new THREE.Color(0xe8a878), warm * 0.5);
+  /** Light levels for the current rain intensity. */
+  applyLevels() {
+    const r = this.rain;
+    const k = this.baseK || 1;
+    const dim = 1 - 0.5 * r;
+    this.scene.backgroundIntensity = k * dim;
+    this.scene.environmentIntensity = k * (this.night ? 1.6 : 0.65) * (1 - 0.35 * r);
+    this.sun.intensity = this.night ? 0.8 : this.hasSun ? (this.timeKey === 'day' ? 3.2 : 2.4) : 0.55 * dim;
+    this.hemi.intensity = this.night ? 0.35 : 0.12;
+    const fogCol = (this.horizon || new THREE.Color(0xc5d3df)).clone();
+    // keep the fog in a believable range regardless of panorama brightness
+    const m = Math.max(fogCol.r, fogCol.g, fogCol.b);
+    if (m > 0.85) fogCol.multiplyScalar(0.85 / m);
+    fogCol.lerp(new THREE.Color(0x59616a), r * 0.5);
     this.fog.color.copy(fogCol);
     this.fog.density = this.fogD;
-    this.renderer.toneMappingExposure = night ? 0.9 : lerp(0.82, 0.95, c) * (warm ? 0.95 : 1) * (1 - 0.25 * this.rain);
-
-    if (rebuildEnv) {
-      // reflections: render the sky into a PMREM environment
-      const pm = new THREE.PMREMGenerator(this.renderer);
-      const envScene = new THREE.Scene();
-      const s2 = new Sky();
-      s2.scale.setScalar(1000);
-      for (const k of Object.keys(u)) s2.material.uniforms[k].value = u[k].value.clone ? u[k].value.clone() : u[k].value;
-      envScene.add(s2);
-      const d2 = this.dome.clone();
-      d2.scale.setScalar(0.2);
-      envScene.add(d2);
-      if (night) envScene.background = new THREE.Color(0x0a0c12);
-      const rt = pm.fromScene(envScene, 0.02);
-      if (this.envRT) this.envRT.dispose();
-      this.envRT = rt;
-      this.scene.environment = rt.texture;
-      this.scene.environmentIntensity = night ? 0.12 : lerp(0.2, 0.3, c) * (1 - 0.4 * this.rain);
-      pm.dispose();
-    }
+    this.renderer.toneMappingExposure = this.night ? 1.05 : 1.0;
   }
 
-  /** Called every frame. camVel is the camera velocity (rain streak direction). */
   update(dt, camPos, camVel, focus) {
-    // changeable weather: wander between dry and wet spells
     if (this.preset.dynamic) {
       this.dynT -= dt;
       if (this.dynT <= 0) {
         this.dynT = 70 + Math.random() * 90;
         const roll = Math.random();
-        this.target = roll < 0.35 ? { clouds: 0.2, rain: 0, fog: 0.0005 } : roll < 0.6 ? { clouds: 0.8, rain: 0, fog: 0.0007 } : roll < 0.85 ? { clouds: 0.95, rain: 0.4, fog: 0.0012 } : { clouds: 1, rain: 1, fog: 0.002 };
+        this.target = roll < 0.4 ? { rain: 0, fog: 0.0005 } : roll < 0.75 ? { rain: 0.4, fog: 0.0012 } : { rain: 1, fog: 0.002 };
       }
       const k = Math.min(1, dt * 0.05);
-      const before = this.clouds;
-      this.clouds = lerp(this.clouds, this.target.clouds, k);
       this.rain = lerp(this.rain, this.target.rain, k);
       this.fogD = lerp(this.fogD, this.target.fog, k);
-      this.envT = (this.envT || 0) + Math.abs(this.clouds - before);
-      this.applySky(this.envT > 0.08);
-      if (this.envT > 0.08) this.envT = 0;
+      this.levelT = (this.levelT || 0) + dt;
+      if (this.levelT > 0.5) { this.levelT = 0; this.applyLevels(); }
     }
-    // track gets wet in rain and slowly dries
     const wetTarget = this.rain > 0.05 ? Math.min(1, 0.3 + this.rain * 0.7) : 0;
-    const rate = wetTarget > this.wetness ? 0.02 * (0.3 + this.rain) : 0.0035 * (this.night ? 0.5 : 1.3 - this.clouds);
+    const rate = wetTarget > this.wetness ? 0.02 * (0.3 + this.rain) : 0.0035 * (this.night ? 0.5 : this.hasSun ? 1.4 : 0.8);
     this.wetness += Math.sign(wetTarget - this.wetness) * Math.min(Math.abs(wetTarget - this.wetness), rate * dt);
 
-    // keep the sky things around the camera
-    this.sky.position.copy(camPos);
-    this.dome.position.copy(camPos);
-    if (this.stars) this.stars.position.copy(camPos);
-    this.cloudMesh.position.x = camPos.x;
-    this.cloudMesh.position.z = camPos.z;
-    this.cloudTex.offset.x += dt * 0.0012;
-    this.cloudTex.offset.y = (camPos.z / 9000) * 3;
-    this.cloudTex.offset.x = (this.cloudTex.offset.x % 1) + 0;
-    // shadows follow the car; light comes from the sun (or straight down from floodlights)
-    const dir = this.night ? new THREE.Vector3(0.25, 1, 0.15).normalize() : this.sunDir();
-    if (!this.night && this.time.elev < 8) dir.y = Math.max(dir.y, 0.14);
-    this.sun.position.copy(focus).addScaledVector(dir, 200);
+    this.sun.position.copy(focus).addScaledVector(this.sunDir, 250);
     this.sun.target.position.copy(focus);
+    if (this.flare) {
+      const d = this.info.dir;
+      this.flare.position.copy(camPos).addScaledVector(d, 2500);
+      this.flare.visible = this.rain < 0.2;
+    }
 
     // rain streaks
     const N = this.drops.length / 3;

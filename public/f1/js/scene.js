@@ -93,7 +93,7 @@ function treeKind(kind) {
   if (kind === 'broadleaf') {
     return [0, 1, 2].map((v) => ({
       trunk: new THREE.CylinderGeometry(0.16, 0.3, 5, 7).translate(0, 2.5, 0),
-      crown: cardCluster(null, 26, 3.2, 6.2 + v * 0.7, 40 + v),
+      crown: mergeGeometries([cardCluster(null, 20, 2.8, 6.4 + v * 0.6, 40 + v), cardCluster(null, 12, 2.1, 5.0, 50 + v).translate(1.4, 0, 0.5), cardCluster(null, 12, 2.0, 5.3, 60 + v).translate(-1.2, 0.3, -0.8)]),
       leaf: TX.leaves([0.24 + v * 0.03, 0.4 - v * 0.03, 0.14], 3 + v),
     }));
   }
@@ -142,7 +142,7 @@ function treeKind(kind) {
 function plantTrees(scene, spots, kind, quality) {
   const kinds = treeKind(kind);
   if (!kinds.length || !spots.length) return;
-  const bark = new THREE.MeshStandardMaterial({ color: kind === 'palm' ? 0x7a6448 : 0x4e3a28, roughness: 0.95 });
+  const bark = new THREE.MeshStandardMaterial({ map: TX.bark(), color: kind === 'palm' ? 0xc8b090 : 0xffffff, roughness: 0.95 });
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
   kinds.forEach((kd, v) => {
     const mine = spots.filter((_, i) => i % kinds.length === v);
@@ -165,52 +165,32 @@ function plantTrees(scene, spots, kind, quality) {
 }
 
 // ---------------------------------------------------------------- environment
-export function buildGround(scene, theme, y, quality) {
-  const gr = TX.grass(theme.grass);
-  const map = gr.map.clone(); map.needsUpdate = true; map.repeat.set(400, 400);
-  const nm = gr.normalMap.clone(); nm.needsUpdate = true; nm.repeat.set(400, 400);
-  const ground = add(scene, new THREE.PlaneGeometry(9000, 9000), new THREE.MeshStandardMaterial({ map, normalMap: nm, roughness: 0.95 }));
+export function buildGround(scene, theme, y, quality, night = false) {
+  // the photographed sky panorama is the horizon now: just a big ground plane here
+  const sand = theme.trees === 'palm';
+  let mat;
+  if (sand) {
+    const gr = TX.grass(theme.grass);
+    const map = gr.map.clone(); map.needsUpdate = true; map.repeat.set(500, 500);
+    mat = new THREE.MeshStandardMaterial({ map, roughness: 0.97 });
+  } else {
+    mat = new THREE.MeshStandardMaterial({ map: TX.photoGrass(600, 600), roughness: 0.95, color: 0xd8dccf });
+  }
+  const ground = add(scene, new THREE.PlaneGeometry(9000, 9000), mat);
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = y;
-  // horizon: hills / mountains / dunes
-  const r = TX.rng(77);
-  const c = new THREE.Color(theme.hills);
-  const geos = [];
-  const count = theme.far === 'mountains' ? 22 : 30;
-  for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2 + r() * 0.2;
-    const d = 2300 + r() * 600;
-    const hgt = theme.far === 'mountains' ? 250 + r() * 380 : theme.far === 'city' ? 0 : 50 + r() * 90;
-    if (!hgt) continue;
-    const g = new THREE.ConeGeometry(hgt * (theme.far === 'mountains' ? 1.4 : 4), hgt, 9, 3);
-    const pos = g.attributes.position;
-    for (let k = 0; k < pos.count; k++) pos.setXYZ(k, pos.getX(k) * (0.8 + r() * 0.4), pos.getY(k), pos.getZ(k) * (0.8 + r() * 0.4));
-    g.translate(Math.cos(a) * d, y + hgt / 2 - 5, Math.sin(a) * d);
-    geos.push(g);
-  }
-  if (geos.length) {
-    const g = mergeGeometries(geos);
-    g.computeVertexNormals();
-    const pos = g.attributes.position;
-    const col = new Float32Array(pos.count * 3);
-    for (let k = 0; k < pos.count; k++) {
-      const hgt = pos.getY(k) - y;
-      const snow = theme.far === 'mountains' && hgt > 330 ? 1 : 0;
-      const cc = snow ? new THREE.Color(0xf0f2f5) : c.clone().multiplyScalar(0.75 + Math.min(0.4, hgt / 900));
-      col.set([cc.r, cc.g, cc.b], k * 3);
-    }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    add(scene, g, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 1 }));
-  }
   if (theme.far === 'city') {
+    const r = TX.rng(77);
     const n = quality ? 160 : 80;
-    const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0x9aa3ad, roughness: 0.6, metalness: 0.3 }), n);
+    const fac = TX.facade();
+    const bm = TX.worldUV(new THREE.MeshStandardMaterial({ map: fac.map, emissiveMap: fac.emissiveMap, emissive: night ? 0xffffff : 0x000000, emissiveIntensity: night ? 1.4 : 0, roughness: 0.45, metalness: 0.4 }), 26);
+    const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), bm, n);
     const m4 = new THREE.Matrix4();
     for (let i = 0; i < n; i++) {
       const a = r() * Math.PI * 2, d = 1300 + r() * 1500;
       m4.makeScale(30 + r() * 50, 40 + r() * 220, 30 + r() * 50).setPosition(Math.cos(a) * d, y, Math.sin(a) * d);
       inst.setMatrixAt(i, m4);
-      inst.setColorAt(i, new THREE.Color().setHSL(0.58, 0.08, 0.45 + r() * 0.3));
+      inst.setColorAt(i, new THREE.Color().setHSL(0.58, 0.06, 0.6 + r() * 0.3));
     }
     scene.add(inst);
   }
@@ -233,11 +213,13 @@ export function buildTrackScene(scene, T, { night = false, quality = 1 } = {}) {
   const base = T.minY - 0.3;
   const wet = [];
   const out = { lights: [], wet, lamps: [] };
-  buildGround(scene, theme, base, quality);
+  buildGround(scene, theme, base, quality, night);
 
   // embankments sloping down to the ground plane
   const gr = TX.grass(theme.grass);
-  const grassMat = new THREE.MeshStandardMaterial({ map: gr.map, normalMap: gr.normalMap, roughness: 0.95 });
+  const grassMat = theme.trees === 'palm'
+    ? new THREE.MeshStandardMaterial({ map: gr.map, normalMap: gr.normalMap, roughness: 0.95 })
+    : new THREE.MeshStandardMaterial({ map: TX.photoGrass(1, 1), normalMap: gr.normalMap, normalScale: new THREE.Vector2(0.5, 0.5), roughness: 0.95, color: 0xd8dccf });
   const ground = (i) => T.pts[i].y * 0.12 + base * 0.88 - 0.05;
   for (const side of [1, -1]) {
     const wall = side > 0 ? (i) => T.wallL[i] : (i) => -T.wallR[i];
@@ -269,8 +251,16 @@ export function buildTrackScene(scene, T, { night = false, quality = 1 } = {}) {
 
   // the racing surface
   const as = TX.asphalt();
-  const asphaltMat = new THREE.MeshStandardMaterial({ map: as.map, roughnessMap: as.roughnessMap, normalMap: as.normalMap, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 1 });
-  add(scene, ribbon(T, half + 0.15, -half - 0.15, { vScale: T.def.width }), asphaltMat);
+  const asphaltMat = new THREE.MeshStandardMaterial({ map: as.map, roughnessMap: as.roughnessMap, normalMap: as.normalMap, normalScale: new THREE.Vector2(0.3, 0.3), roughness: 1, vertexColors: true });
+  // rubber laid down in the braking zones before corners
+  const brake = new Float32Array(T.n);
+  for (let i = 0; i < T.n; i++) {
+    let b = 0;
+    for (let j = 0; j < 80; j += 2) if (Math.abs(T.curv[(i + j) % T.n]) > 1 / 140) { b = Math.max(b, 1 - j / 80); }
+    brake[i] = b;
+  }
+  const rubberCol = new THREE.Color();
+  add(scene, ribbon(T, half + 0.15, -half - 0.15, { vScale: T.def.width, colorFn: (i) => rubberCol.setScalar(1 - 0.16 * brake[i] - 0.03 * Math.sin(i * 0.37) ** 2) }), asphaltMat);
   wet.push({ mat: asphaltMat, rough: 1, color: new THREE.Color(0xffffff) });
 
   // kerbs: raised red/white with a ridge
@@ -305,7 +295,7 @@ export function buildTrackScene(scene, T, { night = false, quality = 1 } = {}) {
     spots.push([x, y, z, 0.75 + r() * 0.6, r() * Math.PI * 2]);
   }
   plantTrees(scene, spots, theme.trees, quality);
-  if (theme.trees === 'city') buildCityBlocks(scene, T, r, quality);
+  if (theme.trees === 'city') buildCityBlocks(scene, T, r, quality, night);
   return out;
 }
 
@@ -583,9 +573,11 @@ function buildTrackside(scene, T, r, out, night, quality) {
   void quality;
 }
 
-function buildCityBlocks(scene, T, r, quality) {
+function buildCityBlocks(scene, T, r, quality, night) {
   const n = quality >= 1 ? 260 : 140;
-  const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.25 }), n);
+  const fac = TX.facade();
+  const bm = TX.worldUV(new THREE.MeshStandardMaterial({ map: fac.map, emissiveMap: fac.emissiveMap, emissive: night ? 0xffffff : 0x000000, emissiveIntensity: night ? 1.4 : 0, roughness: 0.45, metalness: 0.35 }), 26);
+  const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), bm, n);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
   const palette = [0xd9c7a8, 0xc9a68a, 0xa9b8c8, 0xe6e2da, 0x8f9aa6, 0xd5b18a, 0x6f7f8f];
   let placed = 0;
@@ -611,7 +603,7 @@ function buildCityBlocks(scene, T, r, quality) {
 /** Flat proving ground with a measured straight, cone slalom and skid-pad. */
 export function buildPolygon(scene, { night = false, quality = 1 } = {}) {
   const out = { lights: [], wet: [], lamps: [] };
-  buildGround(scene, THEMES.polygon, -0.05, quality);
+  buildGround(scene, THEMES.polygon, -0.05, quality, night);
   const pa = TX.plainAsphalt();
   const map = pa.map.clone(); map.needsUpdate = true; map.repeat.set(220, 220);
   const nm = pa.normalMap.clone(); nm.needsUpdate = true; nm.repeat.set(220, 220);

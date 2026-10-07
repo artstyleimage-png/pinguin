@@ -4,6 +4,26 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+// Final colour grade: a touch of contrast and saturation, warm/cool tint and a lens vignette.
+const GradeShader = {
+  uniforms: { tDiffuse: { value: null }, saturation: { value: 1.08 }, contrast: { value: 1.06 }, tint: { value: new THREE.Vector3(1, 1, 1) }, vignette: { value: 0.32 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float saturation; uniform float contrast; uniform vec3 tint; uniform float vignette; varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+      c.rgb = mix(vec3(l), c.rgb, saturation);
+      c.rgb = (c.rgb - 0.5) * contrast + 0.5;
+      c.rgb *= tint;
+      vec2 d = vUv - 0.5;
+      c.rgb *= 1.0 - vignette * smoothstep(0.25, 0.85, dot(d, d) * 2.2);
+      gl_FragColor = vec4(clamp(c.rgb, 0.0, 1.0), c.a);
+    }`,
+};
 import { TRACKS, trackData } from './tracks.js';
 import { buildTrackScene, buildPolygon, setWetness } from './scene.js';
 import { buildCar, DIM } from './carModel.js';
@@ -397,7 +417,8 @@ class Game {
   }
 
   // ---------------- session ----------------
-  start() {
+  async start() {
+    if (this.state === 'loading') return;
     audio.init();
     const s = this.sel;
     const def = TRACKS.find((t) => t.id === s.track) || TRACKS[0];
@@ -406,7 +427,9 @@ class Game {
     this.mode = def.empty ? 'free' : s.mode;
     const scene = new THREE.Scene();
     this.scene = scene;
-    this.weather = new Weather(scene, this.renderer, { weather: s.weather, time: s.time, quality: s.quality });
+    this.weather = new Weather(scene, this.renderer, { weather: s.weather, time: s.time, quality: s.quality, theme: def.theme });
+    this.state = 'loading';
+    $('loading').classList.remove('hidden');
     const night = this.weather.night;
     if (def.empty) {
       this.T = null;
@@ -448,19 +471,33 @@ class Game {
       scene.add(gm);
       this.ghost = { mesh: gm, data: rec.ghost };
     }
-    // post-processing on high quality
+    // post-processing: medium = bloom + grade + SMAA, high = + ambient occlusion and MSAA
     this.composer = null;
-    if (s.quality >= 2) {
-      const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+    if (s.quality >= 1) {
+      const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: s.quality >= 2 ? 4 : 0 });
       const comp = new EffectComposer(this.renderer, rt);
       comp.addPass(new RenderPass(scene, this.camera));
-      comp.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), night ? 0.5 : 0.12, 0.4, night ? 0.85 : 1.4));
+      if (s.quality >= 2) {
+        const ao = new GTAOPass(scene, this.camera, innerWidth, innerHeight);
+        ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1, scale: 1.2, samples: 12 });
+        ao.blendIntensity = 0.85;
+        comp.addPass(ao);
+      }
+      comp.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), night ? 0.45 : 0.06, 0.3, night ? 0.9 : 3));
       comp.addPass(new OutputPass());
+      const grade = new ShaderPass(GradeShader);
+      const t = s.time;
+      grade.uniforms.tint.value.set(...(t === 'sunset' ? [1.05, 0.98, 0.92] : t === 'morning' ? [1.03, 1.0, 0.96] : t === 'night' ? [0.94, 0.97, 1.06] : [1, 1, 1]));
+      grade.uniforms.saturation.value = WEATHERS[s.weather].overcast ? 0.98 : 1.08;
+      comp.addPass(grade);
+      if (s.quality === 1) comp.addPass(new SMAAPass());
       comp.setPixelRatio(this.renderer.getPixelRatio());
       comp.setSize(innerWidth, innerHeight);
       this.composer = comp;
     }
 
+    await this.weather.ready;
+    $('loading').classList.add('hidden');
     this.lap = { n: 0, start: null, valid: true, sectors: [null, null, null], samples: [] };
     this.laps = [];
     this.bestSession = null;
@@ -927,6 +964,7 @@ class Game {
     const now = performance.now();
     const dt = this.fixedDt || Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
+    if (this.state === 'loading') return;
     if (this.state === 'menu') {
       const s = this.show;
       s.a += dt * 0.3;

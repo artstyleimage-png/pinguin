@@ -17,7 +17,7 @@ function ring(w, h, n, seg) {
 }
 
 /** Smooth body through cross-sections [{z, w, h, y, x?, n?, top?}] (top shifts the upper half for flat bottoms). */
-function loft(sections, { seg = 32, capStart = true, capEnd = true } = {}) {
+function loft(sections, { seg = 48, capStart = true, capEnd = true } = {}) {
   const pos = [];
   const idx = [];
   for (const s of sections) {
@@ -122,12 +122,13 @@ function tyreGeo(w) {
  */
 export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 } = {}) {
   const g = new THREE.Group();
-  const carb = TX.carbon();
+  const carb = TX.carbonReal();
   const extra = ghost ? { transparent: true, opacity: 0.32, depthWrite: false } : {};
-  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.1, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.12, ...extra });
+  const flakes = TX.flakes();
+  const paint = new THREE.MeshPhysicalMaterial({ color: spec.main, metalness: 0.35, roughness: 0.42, normalMap: flakes, normalScale: new THREE.Vector2(0.08, 0.08), clearcoat: 1, clearcoatRoughness: 0.06, ...extra });
   const paint2 = new THREE.MeshPhysicalMaterial({ color: spec.second, metalness: 0.2, roughness: 0.35, clearcoat: 0.8, clearcoatRoughness: 0.1, ...extra });
   const accent = new THREE.MeshPhysicalMaterial({ color: spec.accent, metalness: 0.2, roughness: 0.4, clearcoat: 0.6, ...extra });
-  const cf = new THREE.MeshStandardMaterial({ map: carb.map, normalMap: carb.normalMap, normalScale: new THREE.Vector2(0.4, 0.4), roughness: 0.38, metalness: 0.3, ...extra });
+  const cf = new THREE.MeshPhysicalMaterial({ map: carb.map, normalMap: carb.normalMap, normalScale: new THREE.Vector2(0.35, 0.35), roughness: 0.45, metalness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.15, color: 0x8a8a8a, ...extra });
   const black = new THREE.MeshStandardMaterial({ color: 0x08090a, roughness: 0.6, metalness: 0.1, ...extra });
   const metal = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.25, metalness: 0.95, ...extra });
   const rubber = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.78, metalness: 0, ...extra });
@@ -174,8 +175,9 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
     ]), paint, g);
     mesh(new THREE.CircleGeometry(0.17, 24), black, g, [s * 0.6, 0.53, 0.625], [0, 0, 0], [1, 0.8, 1]); // radiator inlet
     // mirrors
-    mesh(new THREE.BoxGeometry(0.17, 0.075, 0.05), paint, g, [s * 0.52, 0.86, 0.66]);
-    mesh(new THREE.PlaneGeometry(0.15, 0.06), new THREE.MeshStandardMaterial({ color: 0xbfd4e6, metalness: 1, roughness: 0.05, ...extra }), g, [s * 0.52, 0.86, 0.634], [0, Math.PI, 0]);
+    // aerodynamic housing with the glass facing back
+    mesh(new THREE.SphereGeometry(1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), paint, g, [s * 0.52, 0.86, 0.655], [Math.PI / 2, 0, 0], [0.08, 0.06, 0.035]);
+    mesh(new THREE.CircleGeometry(1, 24), new THREE.MeshStandardMaterial({ color: 0xc8d8e8, metalness: 1, roughness: 0.03, ...extra }), g, [s * 0.52, 0.86, 0.653], [0, Math.PI, 0], [0.078, 0.033, 1]);
     g.add(rod(new THREE.Vector3(s * 0.36, 0.8, 0.66), new THREE.Vector3(s * 0.48, 0.86, 0.66), 0.012, cf));
   }
 
@@ -243,7 +245,7 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
   const helmet = new THREE.Group();
   helmet.position.set(0, 0.86, 0.42);
   g.add(helmet);
-  mesh(new THREE.SphereGeometry(0.15, 24, 18), paint2, helmet, [0, 0, 0], [0, 0, 0], [1, 1.02, 1.12]);
+  mesh(new THREE.SphereGeometry(0.15, 32, 24), new THREE.MeshPhysicalMaterial({ map: TX.helmetLivery(spec.main, spec.second, number), roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, ...extra }), helmet, [0, 0, 0], [0, 0, 0], [1, 1.02, 1.12]);
   mesh(new THREE.SphereGeometry(0.152, 24, 8, -1.1, 2.2, 1.25, 0.38), new THREE.MeshStandardMaterial({ color: 0x111418, metalness: 0.9, roughness: 0.08, ...extra }), helmet, [0, 0, 0], [0, 0, 0], [1, 1.02, 1.12]);
   mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 12), accent, helmet, [0, 0.15, 0]);
 
@@ -290,14 +292,7 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
     g.add(pivot);
     const spin = new THREE.Group();
     pivot.add(spin);
-    mesh(tyreGeo(w), rubber, spin);
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.008, 6, 48), new THREE.MeshStandardMaterial({ color: COMPOUND_COLORS[compound], roughness: 0.6, ...extra }));
-    band.rotation.y = Math.PI / 2;
-    band.position.x = side * (w / 2 + 0.001);
-    spin.add(band);
-    const bandIn = band.clone();
-    bandIn.position.x = -side * (w / 2 + 0.001);
-    spin.add(bandIn);
+    mesh(tyreGeo(w), ghost ? rubber : new THREE.MeshStandardMaterial({ map: TX.sidewall(`#${COMPOUND_COLORS[compound].toString(16).padStart(6, '0')}`, compound.toUpperCase()), roughness: 0.82, metalness: 0 }), spin);
     // wheel cover (2026 rims carry flat covers)
     const cover = mesh(new THREE.CylinderGeometry(0.232, 0.232, w * 0.9, 36), metal, spin, [0, 0, 0], [0, 0, Math.PI / 2]);
     cover.castShadow = false;
@@ -330,6 +325,15 @@ export function buildCar(spec, { ghost = false, compound = 'medium', number = 1 
     mesh(new THREE.BoxGeometry(0.01, 0.06, 1.2), accent, g, [s * 0.83, 0.38, -0.3]);
   }
 
+  // exhaust and a soft contact shadow under the floor
+  mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.22, 16, 1, true), new THREE.MeshStandardMaterial({ color: 0x7a6a5a, metalness: 0.9, roughness: 0.35, side: THREE.DoubleSide, ...extra }), g, [0, 0.5, -2.42], [Math.PI / 2, 0, 0]);
+  if (!ghost) {
+    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 5.4), new THREE.MeshBasicMaterial({ map: TX.blobShadow(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(0, 0.015, -0.1);
+    shadow.renderOrder = 2;
+    g.add(shadow);
+  }
   if (ghost) g.traverse((c) => { if (c.isMesh) { c.castShadow = false; c.receiveShadow = false; } });
   return { group: g, wheels, frontFlaps, rearFlap, steering: sw, display: { canvas: disp, ctx: disp.getContext('2d'), tex: dispTex }, leds, helmet, rainLight, cockpit };
 }
