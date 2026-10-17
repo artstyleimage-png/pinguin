@@ -10,6 +10,13 @@ The placeholder raccoon is not the final model. It is an assembly of spheres and
 
 ---
 
+## Shortcut: automatic setup
+
+- **Play in the browser without installing anything:** see [PLAY_ONLINE.md](PLAY_ONLINE.md). Every push builds the game and publishes it at https://artstyleimage-png.github.io/pinguin/plant-raccoon/
+- **Open it locally:** in Unity Hub choose *Add > Add project from disk* and select this `PlantRaccoon` folder. The project expects Unity 6000.0.84f1, but any Unity 6 version works. Then use the menu **PLANT RACCOON > Set Up Project and Build Stage 1 Scene**. That single command does everything in sections 1–6 below automatically.
+
+The manual steps below are still useful for understanding how everything fits together.
+
 ## 1. Unity project settings
 
 | Setting | Value |
